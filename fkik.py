@@ -4,40 +4,40 @@
 
 import coord_math as m
 import pymel.core as pm
-
-# SSC default bone names
-internal_def_fk_jnts = { 'shoulder':'armUprFK_drv', 'elbow':'armLwrFK_drv', 'wrist':'armWristFK_drv' }
-internal_def_ik_jnts = { 'shoulder':'armUprIK_drv', 'elbow':'armLwrIK_drv', 'wrist':'armWristIK_drv' }
-
-# SSC default controls names
-internal_default_fk_ctrls = (
-    { 'shoulder':'armUprFK_Ctrl', 'elbow':'armLwrFK_Ctrl', 'wrist':'armWristFK_Ctrl' })
-internal_default_ik_ctrls = (
-    { 'shoulder':'armUprIK_Ctrl', 'elbow':'ArmPV_Ctrl', 'wrist':'armWristIK_Ctrl' })
-internal_side_tokens = { 'left':'L_', 'right':'R_' }
+import numpy as np
+import constants as cons
+import copy
 
 
-def fk_to_ik(side=None, ik_bones_dict = internal_def_ik_jnts, fk_ctrls_dict = internal_def_fk_jnts):
-    """
+def fk_to_ik(side=None, ik_bones_dict=None, 
+    fk_ctrls_dict=None):
+    '''
     Match fk controls to ik, but executing match xforms of the controllers to the bones.  Generic
     and ready to receive rig info for any rig with a 'copied arm' set up for fk/ik.  Assuming that
     the rig is well build and controller xforms match these bone xforms, result will be accurate.
     
     ik_bones_dict - dictionary containing keys 'shoulder' and 'elbow', etc, listing the ik bones.
     fk_ctrls_dict - dictionary containing keys 'shoulder' and 'elbow' etc, listing fk controls.
-    """
+    '''
+
+    # Assign defaults like so to dodge the mutable default argument issue:
+    if(ik_bones_dict == None):
+        ik_bones_dict = cons.INTERNAL_DEF_IK_JNTS.copy()
+    if(fk_ctrls_dict == None):
+        fk_ctrls_dict = cons.INTERNAL_DEF_FK_CTRLS.copy()
 
     if(side == None):      
         pm.error("Specify a side flag (Example fk_to_ik(side='l') )")
         return
 
     if(side.upper() in ['L', 'LEFT', 'L_', 'LFT', 'LT']):
-        side_token = internal_side_tokens['left']
+        side_token = cons.INTERNAL_SIDE_TOKENS['left']
     elif(side.upper() in ['R', 'RIGHT', 'R_', 'RGT', 'RT']):
-        side_token = internal_side_tokens['right']
+        side_token = cons.INTERNAL_SIDE_TOKENS['right']
     else:
         pm.error("Given side-flag string was weird.  Try 'r' or 'l'.")
         return
+
 
     # Append the side token to all strings.
     for bone in ik_bones_dict:
@@ -64,9 +64,8 @@ def fk_to_ik(side=None, ik_bones_dict = internal_def_ik_jnts, fk_ctrls_dict = in
     return
 
     
-def ik_to_fk(side=None, fk_bones_dict = internal_def_fk_jnts, 
-            ik_ctrls_dict=internal_default_ik_ctrls):
-    """
+def ik_to_fk(side=None, fk_bones_dict=None, ik_ctrls_dict=None):
+    '''
     Move IK controls to match FK position.
     Ready to receive rig info for any rig with a 'copied arm' set up for fk/ik.  Assuming that the 
     rig is well build and controller xforms match these bone xforms, result will be accurate.
@@ -77,7 +76,13 @@ def ik_to_fk(side=None, fk_bones_dict = internal_def_fk_jnts,
     side - A string token to be appended to the front of the bone name.
     fk_bones_dict - dictionary containing keys 'shoulder' and 'elbow', etc, listing the fk bones.
     ik_ctrls_dict - dictionary containing keys 'shoulder' and 'elbow' etc, listing ik controls.
-    """
+    '''
+
+    # Interally apply the constant due to the "mutable default args problem".
+    if(fk_bones_dict == None):
+        fk_bones_dict = cons.INTERNAL_DEF_FK_JNTS.copy()
+    if(ik_ctrls_dict == None):
+        ik_ctrls_dict = cons.INTERNAL_DEF_IK_CTRLS.copy()
 
     # Append the side flags
     if(side == None):      
@@ -85,12 +90,15 @@ def ik_to_fk(side=None, fk_bones_dict = internal_def_fk_jnts,
         return
 
     if(side.upper() in ['L', 'LEFT', 'L_', 'LFT', 'LT']):
-        side_token = internal_side_tokens['left']
+        side_token = cons.INTERNAL_SIDE_TOKENS['left']
     elif(side.upper() in ['R', 'RIGHT', 'R_', 'RGT', 'RT']):
-        side_token = internal_side_tokens['right']
+        side_token = cons.INTERNAL_SIDE_TOKENS['right']
     else:
         pm.error("Given side-flag string was weird.  Try 'r' or 'l'.")
         return
+
+    print("request side token isn {}".format(side_token))
+
 
     # Append the side token to all strings.
     for bone in fk_bones_dict:
@@ -100,15 +108,45 @@ def ik_to_fk(side=None, fk_bones_dict = internal_def_fk_jnts,
         ik_ctrls_dict[ctrl] = (side_token + ik_ctrls_dict[ctrl])
     print ("Side tokens added, ctrl targets are:\n {}".format(ik_ctrls_dict))
 
+
+
     # Step one, match ik shoulder 1:1
     shoulder_target = pm.PyNode(fk_bones_dict['shoulder'])
     shoulder_ctrl = pm.PyNode(ik_ctrls_dict['shoulder'])
     pm.matchTransform(shoulder_ctrl, shoulder_target, pos=True, piv=True)
 
     # Step two, match ik wrist 1:1
-    wrist_target = pm.Pynode(fk_bones_dict['wrist'])
+    wrist_target = pm.PyNode(fk_bones_dict['wrist'])
     wrist_ctrl = pm.PyNode(ik_ctrls_dict['wrist'])
-    pm.matchTransform(wrist_ctrl, wrist_target, pos=True, piv=True)
+    pm.matchTransform(wrist_ctrl, wrist_target, pos=True, rot=True, piv=True)
 
-    # Step three-- triangulate the plane on which the pole vector should go.
-    normal = m.get_normal()
+    # Step three, match the PV control 1:1 to the elbow
+    elbow_target = pm.PyNode(fk_bones_dict['elbow'])
+    elbow_ctrl = pm.PyNode(ik_ctrls_dict['elbow'])
+    pm.matchTransform(elbow_ctrl, elbow_target, pos=True) # Ignore the piv flag, maybe locked.
+
+    # Step three-- extend the vectors where one is a ray from the hip to the knee, and the other is
+    # the ankle to the knee.  This establishes the plane whereon the PV can live.
+    vector_a = m.get_vector(
+        point_a=pm.xform(shoulder_target, q=True, t=True, ws=True),
+        point_b=pm.xform(elbow_target, q=True, t=True, ws=True)
+        )
+    vector_b = m.get_vector(
+        point_a=pm.xform(wrist_target, q=True, t=True, ws=True),
+        point_b=pm.xform(elbow_target, q=True, t=True, ws=True)
+        )
+
+    # Combined directions of the two vectors should be "out" from the middle joint.
+    out_vector = vector_a + vector_b
+    # Reduce the out vector
+    out_vector = (out_vector * .75)
+    print (out_vector)
+
+    # Current placement into a numpy vector
+    current_pos = np.array(pm.xform(elbow_ctrl, q=True, t=True, ws=True))
+    final_pos = current_pos - out_vector
+    
+    # Move the middle control "outward" along the out_vector.
+    pm.xform(elbow_ctrl, t=(final_pos[0], final_pos[1], final_pos[2]), ws=True)
+
+    print("Done.")
