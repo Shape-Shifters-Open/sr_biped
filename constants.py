@@ -16,7 +16,7 @@ INTERNAL_DEF_FK_JNTS = (
     'wrist':'armWristFK_drv',
     'hip':'legUprFK_drv',
     'knee':'legLwrFK_drv',
-    'ankle':'legAnkleFK_drv'
+    'ankle':'legAnkleFK_drv',
     }
     )
 

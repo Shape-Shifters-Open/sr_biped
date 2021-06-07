@@ -76,7 +76,8 @@ def fk_to_ik(side=None, limb=None, ik_bones_dict=None, fk_ctrls_dict=None, key=F
     return
 
     
-def ik_to_fk(side=None, limb=None, fk_bones_dict=None, ik_ctrls_dict=None, key=False):
+def ik_to_fk(side=None, limb=None, fk_bones_dict=None, ik_ctrls_dict=None, key=False, 
+    foot_rot_comp=None):
     '''
     Move IK controls to match FK position.
     Ready to receive rig info for any rig with a 'copied arm' set up for fk/ik.  Assuming that the 
@@ -88,6 +89,10 @@ def ik_to_fk(side=None, limb=None, fk_bones_dict=None, ik_ctrls_dict=None, key=F
     side - A string token to be appended to the front of the bone name.
     fk_bones_dict - dictionary containing keys 'shoulder' and 'elbow', etc, listing the fk bones.
     ik_ctrls_dict - dictionary containing keys 'shoulder' and 'elbow' etc, listing ik controls.
+    key - True if you want keyframes applied to the controls in question
+    foot_rot_comp - Vector to compensate for the difference between FK orientation and IK handle 
+        being oriented to world space.  Shaper Rigs' node constant have something inside to account
+        for this, hence the default to (0, 0, 0)
     '''
 
     # Interally apply the constant due to the "mutable default args problem".
@@ -95,6 +100,8 @@ def ik_to_fk(side=None, limb=None, fk_bones_dict=None, ik_ctrls_dict=None, key=F
         fk_bones_dict = cons.INTERNAL_DEF_FK_JNTS.copy()
     if(ik_ctrls_dict == None):
         ik_ctrls_dict = cons.INTERNAL_DEF_IK_CTRLS.copy()
+    if(foot_rot_comp == None):
+        foot_rot_comp = (0, 0, 90)
 
     # Based on the limb string incoming, the following keys will be used in the dictionary.
     if(limb == 'leg'):
@@ -134,9 +141,22 @@ def ik_to_fk(side=None, limb=None, fk_bones_dict=None, ik_ctrls_dict=None, key=F
     pm.matchTransform(topmost_ctrl, topmost_target, pos=True, piv=True)
 
     # Step two, match ik wrist 1:1
+    # If not a leg, regular matchTransform is safe, as rig is likely build 1:1 with the parts.
     wrist_target = pm.PyNode(fk_bones_dict[targets_list[2]])
     wrist_ctrl = pm.PyNode(ik_ctrls_dict[targets_list[2]])
     pm.matchTransform(wrist_ctrl, wrist_target, pos=True, rot=True, piv=True)
+    if(limb == 'leg'):
+        # Perform relative transform from new position against the joint-orient of the target, since
+        # the IK foot control is likely in world-space.
+        print ("Counter-rotating feet...")
+        if(side_token == cons.INTERNAL_SIDE_TOKENS['left']):
+            pm.xform(wrist_ctrl, r=True, os=True, ro=foot_rot_comp)
+        else:
+            pass
+            pm.xform(
+                wrist_ctrl, r=True, os=True, 
+                ro=(foot_rot_comp[0]-180, foot_rot_comp[1], foot_rot_comp[2] % 360)
+                )
 
     # Step three, match the PV control 1:1 to the elbow
     elbow_target = pm.PyNode(fk_bones_dict[targets_list[1]])
@@ -234,8 +254,32 @@ def bake_fk_to_ik(side=None, limb=None):
 
     print ("Done.")
 
+    return
 
 
 
+def safe_snap(subject_node, target_node, trans=True, rot=True):
+    '''
+    safe_snap
 
+    Function to snap things with trickier parentage differences by reading their absolute trans and
+    performing and absolute snap.  Slower than pm.matchTransform() but will brute-force against
+    complicated parentage.
 
+    usage:
+    safe_snap(subject_node=PyNode, target_node=PyNode)
+    '''
+
+    print ("Performing a hard match of {} to {}.".format(subject_node, target_node))
+
+	# Get details from the target_node.
+    target_rot = pm.xform( target_node, q=True, ws=True, ro=True )
+    target_trans = pm.xform( target_node, q=True, ws=True, t=True )
+
+    # I've been warned about the ws flags behaving deceptively.
+    if(trans==True):
+        pm.xform( subject_node, ws=True, t=target_trans )
+    if(rot==True):
+        pm.xform( subject_node, ws=True, ro=target_rot )
+
+    return
