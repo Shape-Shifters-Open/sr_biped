@@ -4,8 +4,10 @@
 
 import coord_math as m
 import pymel.core as pm
+import pymel.core.datatypes as dt
 import numpy as np
 import constants as cons
+
 
 
 def fk_to_ik(side=None, limb=None, ik_bones_dict=None, fk_ctrls_dict=None, key=False):
@@ -135,9 +137,15 @@ def ik_to_fk(side=None, limb=None, fk_bones_dict=None, ik_ctrls_dict=None, key=F
         ik_ctrls_dict[ctrl] = (side_token + ik_ctrls_dict[ctrl])
     print ("Side tokens added, ctrl targets are:\n {}".format(ik_ctrls_dict))
 
-    # Step one, match ik shoulder 1:1
+    # Get our nodes prepped.
     topmost_target = pm.PyNode(fk_bones_dict[targets_list[0]])
+    endmost_target = pm.PyNode(fk_bones_dict[targets_list[2]])
+    middle_target = pm.PyNode(fk_bones_dict[targets_list[1]])
     topmost_ctrl = pm.PyNode(ik_ctrls_dict[targets_list[0]])
+    pole_vector = pm.PyNode(ik_ctrls_dict[targets_list[1]])
+
+
+    # Step one, match ik shoulder 1:1
     pm.matchTransform(topmost_ctrl, topmost_target, pos=True, piv=True)
 
     # Step two, match ik wrist 1:1
@@ -158,34 +166,22 @@ def ik_to_fk(side=None, limb=None, fk_bones_dict=None, ik_ctrls_dict=None, key=F
                 ro=(foot_rot_comp[0]-180, foot_rot_comp[1], foot_rot_comp[2] % 360)
                 )
 
-    # Step three, match the PV control 1:1 to the elbow
-    elbow_target = pm.PyNode(fk_bones_dict[targets_list[1]])
-    elbow_ctrl = pm.PyNode(ik_ctrls_dict[targets_list[1]])
-    pm.matchTransform(elbow_ctrl, elbow_target, pos=True) # Ignore the piv flag, maybe locked.
 
     # Step three-- extend the vectors where one is a ray from the hip to the knee, and the other is
     # the ankle to the knee.  This establishes the plane whereon the PV can live.
-    vector_a = m.get_vector(
-        point_a=pm.xform(topmost_target, q=True, t=True, ws=True),
-        point_b=pm.xform(elbow_target, q=True, t=True, ws=True)
-        )
-    vector_b = m.get_vector(
-        point_a=pm.xform(wrist_target, q=True, t=True, ws=True),
-        point_b=pm.xform(elbow_target, q=True, t=True, ws=True)
-        )
 
-    # Combined directions of the two vectors should be "out" from the middle joint.
-    out_vector = vector_a + vector_b
-    # Reduce the out vector
-    out_vector = (out_vector * .75)
-    print (out_vector)
+    # Get the positions of these objects as dt.Vectors.
+    top_pos = dt.Vector(topmost_target.transformationMatrix()[3][:3])
+    mid_pos = dt.Vector(middle_target.transformationMatrix()[3][:3])
+    end_pos = dt.Vector(endmost_target.transformationMatrix()[3][:3])
 
-    # Current placement into a numpy vector
-    current_pos = np.array(pm.xform(elbow_ctrl, q=True, t=True, ws=True))
-    final_pos = current_pos - out_vector
-    
-    # Move the middle control "outward" along the out_vector.
-    pm.xform(elbow_ctrl, t=(final_pos[0], final_pos[1], final_pos[2]), ws=True)
+    # Get directional vectors shooting from shoulder and wrist back at elbow.
+    line_a = end_pos - mid_pos
+    line_b = top_pos - mid_pos
+
+    # A good positional vector for the pv is calculated.
+    pv_pos = (mid_pos - (line_a + line_b))
+    pm.xform(pole_vector, t=(pv_pos), ws=True)
 
     # Put keyframes on all the IK controls if key is true.
     if(key==True):
