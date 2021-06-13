@@ -5,7 +5,6 @@
 import coord_math as m
 import pymel.core as pm
 import pymel.core.datatypes as dt
-import numpy as np
 import constants as cons
 
 
@@ -171,9 +170,9 @@ def ik_to_fk(side=None, limb=None, fk_bones_dict=None, ik_ctrls_dict=None, key=F
     # the ankle to the knee.  This establishes the plane whereon the PV can live.
 
     # Get the positions of these objects as dt.Vectors.
-    top_pos = dt.Vector(topmost_target.transformationMatrix()[3][:3])
-    mid_pos = dt.Vector(middle_target.transformationMatrix()[3][:3])
-    end_pos = dt.Vector(endmost_target.transformationMatrix()[3][:3])
+    top_pos = dt.Vector(pm.xform(topmost_target, query=True, worldSpace=True, translation=True))
+    mid_pos = dt.Vector(pm.xform(middle_target, query=True, worldSpace=True, translation=True))
+    end_pos = dt.Vector(pm.xform(endmost_target, query=True, worldSpace=True, translation=True))
 
     # Get directional vectors shooting from shoulder and wrist back at elbow.
     line_a = end_pos - mid_pos
