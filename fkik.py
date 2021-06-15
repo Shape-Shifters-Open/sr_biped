@@ -1,12 +1,18 @@
-# fkik.py
-# Matt Riche 2021
-# sr_biped for kinematic solver related operations.
+'''
+fkik.py
+Shaper Rigs / Burlington Interactive Solutions
+Matt Riche 2021
 
-import coord_math as m
+FK / IK match tools.  By default will serve Shaper Rigs biped products.  When given different dicts
+can be customized to work on (most) any rig with the pole-vector aligned to the plane defined by 
+upper arm and lower-arm.
+
+For format requirements of the dict, see constants.py
+'''
+
 import pymel.core as pm
 import pymel.core.datatypes as dt
 import constants as cons
-
 
 
 def fk_to_ik(side=None, limb=None, ik_bones_dict=None, fk_ctrls_dict=None, key=False):

@@ -2,6 +2,7 @@
 sr_biped module
 
 Tools to help quickly integrate the Shaper Rigs biped standard into your pipeline.
+These tools could target other rigs with hopefully minimal alteration.
 
 Matt Riche
 Shaper Rigs / Burlington Interactive Solutions
