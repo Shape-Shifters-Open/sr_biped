@@ -15,7 +15,7 @@ Email matt@shaperrigs.com for more info.
 '''
 
 import fkik
-import coord_math as cm
+import attributes
 
 print ("sr_biped module loaded.")
 

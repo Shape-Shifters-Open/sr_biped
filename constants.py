@@ -77,6 +77,16 @@ INTERNAL_SPACE_SWITCH_ATTRS = (
         'foot':[
             'spineHip_Space',
             'cog_Space'
-            ]
+            ],
+        'knee':[
+            'spineHip_Space',
+            'cog_Space',
+            'IK_Foot_Crl_space',
+        ],
+        'elbow':[
+            'spineChestTip_Space',
+            'shoulder_Space',
+            'IK_Hand_Crl_space',
+        ]
         }
     )
