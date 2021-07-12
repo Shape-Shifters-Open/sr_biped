@@ -14,8 +14,7 @@ import pymel.core as pm
 import pymel.core.datatypes as dt
 import constants as cons
 
-print ("WOOGIE")
-def fk_to_ik(side=None, limb=None, ik_bones_dict=None, fk_ctrls_dict=None, key=False):
+def fk_to_ik(side=None, limb=None, ik_bones_dict=None, fk_ctrls_dict=None, key=False, namespace=""):
     '''
     Match fk controls to ik, but executing match xforms of the controllers to the bones.  Generic
     and ready to receive rig info for any rig with a 'copied arm' set up for fk/ik.  Assuming that
@@ -24,6 +23,10 @@ def fk_to_ik(side=None, limb=None, ik_bones_dict=None, fk_ctrls_dict=None, key=F
     ik_bones_dict - dictionary containing keys 'shoulder' and 'elbow', etc, listing the ik bones.
     fk_ctrls_dict - dictionary containing keys 'shoulder' and 'elbow' etc, listing fk controls.
     '''
+
+    # Prep the namespace
+    if(namespace != ""):
+        namespace = (namespace + ":")
 
     # Based on the limb string incoming, the following keys will be used in the dictionary.
     if(limb == 'leg'):
@@ -35,12 +38,15 @@ def fk_to_ik(side=None, limb=None, ik_bones_dict=None, fk_ctrls_dict=None, key=F
         return
 
     # Assign defaults like so to dodge the mutable default argument issue:
-    local_ik_bones_dict = ik_bones_dict.copy()
-    local_fk_ctrls_dict = fk_ctrls_dict.copy()
     if(ik_bones_dict == None):
         local_ik_bones_dict = cons.INTERNAL_DEF_IK_JNTS.copy()
+    else:
+        local_ik_bones_dict = ik_bones_dict.copy()
+    
     if(fk_ctrls_dict == None):
         local_fk_ctrls_dict = cons.INTERNAL_DEF_FK_CTRLS.copy()
+    else:
+        local_fk_ctrls_dict = fk_ctrls_dict.copy()
 
     if(side == None):      
         pm.error("Specify a side flag (Example fk_to_ik(side='l') )")
@@ -56,17 +62,17 @@ def fk_to_ik(side=None, limb=None, ik_bones_dict=None, fk_ctrls_dict=None, key=F
 
     # Append the side token to all strings.
     for bone in local_ik_bones_dict:
-        local_ik_bones_dict[bone] = (side_token + local_ik_bones_dict[bone])
+        local_ik_bones_dict[bone] = (namespace + side_token + local_ik_bones_dict[bone])
     print ("Side tokens added, joint references are:\n {}".format(local_ik_bones_dict))
 
-    for ctrl in fk_ctrls_dict:
-        local_fk_ctrls_dict[ctrl] = (side_token + local_fk_ctrls_dict[ctrl])
+    for ctrl in local_fk_ctrls_dict:
+        local_fk_ctrls_dict[ctrl] = (namespace + side_token + local_fk_ctrls_dict[ctrl])
     print ("Side tokens added, ctrl targets are:\n {}".format(local_ik_bones_dict))
 
     # Iterate through the list of key names, perform the xform matching.
     for target_key in targets_list:
         print("Matching transforms of {} to {}...".format(
-            fk_ctrls_dict[target_key], local_ik_bones_dict[target_key]
+            local_fk_ctrls_dict[target_key], local_ik_bones_dict[target_key]
             ))
         # PyNode these up:
         target_node = pm.PyNode(local_fk_ctrls_dict[target_key])
@@ -85,7 +91,7 @@ def fk_to_ik(side=None, limb=None, ik_bones_dict=None, fk_ctrls_dict=None, key=F
 
     
 def ik_to_fk(side=None, limb=None, fk_bones_dict=None, ik_ctrls_dict=None, key=False, 
-    foot_rot_comp=None):
+    foot_rot_comp=None, namespace=""):
     '''
     Move IK controls to match FK position.
     Ready to receive rig info for any rig with a 'copied arm' set up for fk/ik.  Assuming that the 
@@ -103,13 +109,21 @@ def ik_to_fk(side=None, limb=None, fk_bones_dict=None, ik_ctrls_dict=None, key=F
         for this, hence the default to (0, 0, 0)
     '''
 
+    # Prep the namespace
+    if(namespace != ""):
+        namespace = (namespace + ":")
+
     # Interally apply the constant due to the "mutable default args problem".
-    local_fk_bones_dict = fk_bones_dict.copy()
-    local_ik_ctrls_dict = ik_ctrls_dict.copy()
     if(fk_bones_dict == None):
         local_fk_bones_dict = cons.INTERNAL_DEF_FK_JNTS.copy()
+    else:
+        local_fk_bones_dict = fk_bones_dict.copy()
+
     if(ik_ctrls_dict == None):
         local_ik_ctrls_dict = cons.INTERNAL_DEF_IK_CTRLS.copy()
+    else:
+        local_ik_ctrls_dict = ik_ctrls_dict.copy()
+
     if(foot_rot_comp == None):
         foot_rot_comp = (0, 0, 90)
 
@@ -139,10 +153,10 @@ def ik_to_fk(side=None, limb=None, fk_bones_dict=None, ik_ctrls_dict=None, key=F
 
     # Append the side token to all strings.
     for bone in local_fk_bones_dict:
-        local_fk_bones_dict[bone] = (side_token + local_fk_bones_dict[bone])
+        local_fk_bones_dict[bone] = (namespace + side_token + local_fk_bones_dict[bone])
     print ("Side tokens added, joint references are:\n {}".format(local_fk_bones_dict))
     for ctrl in local_ik_ctrls_dict:
-        local_ik_ctrls_dict[ctrl] = (side_token + local_ik_ctrls_dict[ctrl])
+        local_ik_ctrls_dict[ctrl] = (namespace + side_token + local_ik_ctrls_dict[ctrl])
     print ("Side tokens added, ctrl targets are:\n {}".format(local_ik_ctrls_dict))
 
     # Get our nodes prepped.
@@ -202,7 +216,7 @@ def ik_to_fk(side=None, limb=None, fk_bones_dict=None, ik_ctrls_dict=None, key=F
     return
 
 
-def bake_ik_to_fk(side=None, limb=None, fk_bones_dict=None, ik_ctrls_dict=None):
+def bake_ik_to_fk(side=None, limb=None, fk_bones_dict=None, ik_ctrls_dict=None, namespace=""):
     '''
     bake_ik_to_fk
 
@@ -232,7 +246,8 @@ def bake_ik_to_fk(side=None, limb=None, fk_bones_dict=None, ik_ctrls_dict=None):
 
         # Bake the ik controllers to the position the fk controls are on this frame:
         ik_to_fk(
-            side=side, limb=limb, key=True, fk_bones_dict=fk_bones_dict, ik_ctrls_dict=ik_ctrls_dict
+            side=side, limb=limb, key=True, fk_bones_dict=fk_bones_dict, 
+            ik_ctrls_dict=ik_ctrls_dict, namespace=namespace
             )
         next_frame = (pm.currentTime(q=True) + 1)
         pm.currentTime(next_frame, edit=True)
@@ -241,7 +256,7 @@ def bake_ik_to_fk(side=None, limb=None, fk_bones_dict=None, ik_ctrls_dict=None):
     print ("Done.")
 
 
-def bake_fk_to_ik(side=None, limb=None, ik_bones_dict=None, fk_ctrls_dict=None):
+def bake_fk_to_ik(side=None, limb=None, ik_bones_dict=None, fk_ctrls_dict=None, namespace=""):
     '''
     bake_fk_to_ik
 
@@ -270,7 +285,8 @@ def bake_fk_to_ik(side=None, limb=None, ik_bones_dict=None, fk_ctrls_dict=None):
 
         # Bake the fk controllers to the position the fk controls are on this frame:
         fk_to_ik(
-            side=side, limb=limb, key=True, ik_bones_dict=ik_bones_dict, fk_ctrls_dict=fk_ctrls_dict
+            side=side, limb=limb, key=True, ik_bones_dict=ik_bones_dict, 
+            fk_ctrls_dict=fk_ctrls_dict, namespace=namespace
             )
         next_frame = (pm.currentTime(q=True) + 1)
         pm.currentTime(next_frame, edit=True)
