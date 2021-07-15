@@ -196,24 +196,23 @@ def ik_to_fk(side=None, limb=None, fk_bones_dict=None, ik_ctrls_dict=None, key=T
     # Last step: Put the rotation on the wrist.
     # If not a leg, regular matchTransform is safe, as rig is likely build 1:1 with the parts.
     if(limb == 'leg'):
+        pm.matchTransform(endmost_ctrl, endmost_target, pos=True, rot=True)
         # Perform relative transform from new position against the joint-orient of the target, since
         # the IK foot control is likely in world-space.
         print ("Counter-rotating feet...")
         if(side_token == cons.INTERNAL_SIDE_TOKENS['left']):
-            pm.xform(endmost_target, r=True, os=True, ro=foot_rot_comp)
+            pm.xform(endmost_ctrl, r=True, os=True, ro=foot_rot_comp)
         else:
             pass
             pm.xform(
-                endmost_target, r=True, os=True, 
+                endmost_ctrl, r=True, os=True, 
                 ro=(foot_rot_comp[0]-180, foot_rot_comp[1], foot_rot_comp[2] % 360)
                 )
     else:
-        pm.matchTransform(endmost_ctrl, endmost_target)
-        pm.matchTransform(endmost_ctrl, endmost_target, pos=True, rot=True, piv=True)
-
+        pm.matchTransform(endmost_ctrl, endmost_target, pos=True, rot=True)
 
     # Last step is to get the orientation of the elbow control
-    pm.matchTransform(middle_ctrl, middle_target, rot=True, piv=True)
+    pm.matchTransform(middle_ctrl, middle_target, rot=True)
 
 
     # Put keyframes on all the IK controls if key is true.
