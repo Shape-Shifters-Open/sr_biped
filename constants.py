@@ -45,7 +45,7 @@ INTERNAL_DEF_FK_CTRLS = (
 INTERNAL_DEF_IK_CTRLS = (
     { 
         'shoulder':'armUprIK_Ctrl',
-        'elbow':'armLwrFK_Ctrl', 
+        'elbow':'ArmElbow_Ctrl', 
         'elbow_pv':'ArmPV_Ctrl', 
         'wrist':'armWristIK_Ctrl', 
         'pv_offset_elbow':'ArmPV_nOffset',

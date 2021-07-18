@@ -84,8 +84,9 @@ def fk_to_ik(side=None, limb=None, ik_bones_dict=None, fk_ctrls_dict=None, key=T
 
     # Put keyframes on all the FK controls if key is true.
     if(key==True):
-        for ctrl in local_fk_ctrls_dict:
-            pm.setKeyframe(local_fk_ctrls_dict[ctrl], at=['translate', 'rotate'])
+        for target_key in targets_list:
+            pm.setKeyframe(local_fk_ctrls_dict[target_key], at=['translate', 'rotate'])
+            pm.filterCurve
             print ("Keying {}".format(local_fk_ctrls_dict[ctrl]))
 
     print ("Done.")
@@ -94,7 +95,7 @@ def fk_to_ik(side=None, limb=None, ik_bones_dict=None, fk_ctrls_dict=None, key=T
 
     
 def ik_to_fk(side=None, limb=None, fk_bones_dict=None, ik_ctrls_dict=None, key=True, 
-    foot_rot_comp=None, namespace=""):
+    foot_rot_comp=None, amp_pv=40.0, namespace=""):
     '''
     Move IK controls to match FK position.
     Ready to receive rig info for any rig with a 'copied arm' set up for fk/ik.  Assuming that the 
@@ -110,6 +111,9 @@ def ik_to_fk(side=None, limb=None, fk_bones_dict=None, ik_ctrls_dict=None, key=T
     foot_rot_comp - Vector to compensate for the difference between FK orientation and IK handle 
         being oriented to world space.  Shaper Rigs' node constant have something inside to account
         for this, hence the default to (0, 0, 0)
+    amp_pv - How much to amplify the vector projecting the pole vector.
+    namespace - Passes a string of the anticipated namespace so that the handle/joint constants can 
+        have it added as a prefix
     '''
 
     # Prep the namespace
@@ -133,6 +137,7 @@ def ik_to_fk(side=None, limb=None, fk_bones_dict=None, ik_ctrls_dict=None, key=T
     # Based on the limb string incoming, the following keys will be used in the dictionary.
     if(limb == 'leg'):
         targets_list = ['hip', 'ankle', 'knee', 'knee_pv']
+        amp_pv *= 1.2 # Little extra distance for legs.
     elif(limb == 'arm'):
         targets_list = ['shoulder', 'wrist', 'elbow', 'elbow_pv']
     else:
@@ -152,7 +157,7 @@ def ik_to_fk(side=None, limb=None, fk_bones_dict=None, ik_ctrls_dict=None, key=T
         pm.error("Given side-flag string was weird.  Try 'r' or 'l'.")
         return
 
-    print("request side token isn {}".format(side_token))
+    print("request side token is {}".format(side_token))
 
     # Append the side token to all strings.
     for bone in local_fk_bones_dict:
@@ -177,20 +182,47 @@ def ik_to_fk(side=None, limb=None, fk_bones_dict=None, ik_ctrls_dict=None, key=T
     pm.matchTransform(topmost_ctrl, topmost_target, pos=True, piv=True)
 
 
-    # Step four-- extend the vectors where one is a ray from the hip to the knee, and the other is
-    # the ankle to the knee.  This establishes the plane whereon the PV can live.
+    # Based on the calc style chosen, calculate where the PV should go based on the position of the
+    # given FK bones.
+
+    # TODO: If our keying is going to happen, we should do shoulder and wrist here, Euler filter it
+    # then do the PV last.
+    
 
     # Get the positions of these objects as dt.Vectors.
     top_pos = dt.Vector(pm.xform(topmost_target, query=True, worldSpace=True, translation=True))
     mid_pos = dt.Vector(pm.xform(middle_target, query=True, worldSpace=True, translation=True))
     end_pos = dt.Vector(pm.xform(endmost_target, query=True, worldSpace=True, translation=True))
 
+    # Derive PV position using two vectors crossing, added together.
     # Get directional vectors shooting from shoulder and wrist back at elbow.
     line_a = end_pos - mid_pos
     line_b = top_pos - mid_pos
 
+    print(line_b)
+
+    # Normalize these values:
+    line_a.normalize()
+    line_b.normalize()
+
+    print(line_b)
+
+    # Apply amplification value:
+    line_a *= amp_pv
+    line_b *= amp_pv
+
+    print(line_b)
+
     # A good positional vector for the pv is calculated.
     pv_pos = (mid_pos - (line_a + line_b))
+
+    # To stop these vectors from ever aiming inside by mistake, we can aim towards the middle_ctrl
+    # and add some of that amplitude to make sure it moves out.
+    line_c = mid_pos - dt.Vector(pm.xform(middle_ctrl, q=True, worldSpace=True, translation=True))
+    line_c.normalize()
+    print(line_c)  
+
+    pv_pos = (pv_pos + (line_c * amp_pv))
     pm.xform(pole_vector, t=(pv_pos), ws=True)
 
     # Last step: Put the rotation on the wrist.
@@ -217,8 +249,8 @@ def ik_to_fk(side=None, limb=None, fk_bones_dict=None, ik_ctrls_dict=None, key=T
 
     # Put keyframes on all the IK controls if key is true.
     if(key==True):
-        for ctrl in local_ik_ctrls_dict:
-            pm.setKeyframe(local_ik_ctrls_dict[ctrl], at=['translate', 'rotate'])
+        for target_key in targets_list:
+            pm.setKeyframe(local_ik_ctrls_dict[target_key], at=['translate', 'rotate'])
             print ("Keying {}".format(local_ik_ctrls_dict[ctrl]))
 
     print("Done.")
