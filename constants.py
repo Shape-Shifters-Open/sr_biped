@@ -52,7 +52,10 @@ INTERNAL_DEF_IK_CTRLS = (
         'hip':'legUprIK_Ctrl',
         'knee_pv':'LegPV_Ctrl',
         'knee':'LegKnee_Ctrl',
-        'ankle':'legAnkleIK_Ctrl'
+        'ankle':'legAnkleIK_Ctrl',
+        'toe':'toe_Ctrl',
+        'ball':'ball_Ctrl',
+        'heel':'heel_Ctrl'
         }
     )
 

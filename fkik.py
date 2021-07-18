@@ -61,7 +61,7 @@ def fk_to_ik(side=None, limb=None, ik_bones_dict=None, fk_ctrls_dict=None, key=T
         pm.error("Given side-flag string was weird.  Try 'r' or 'l'.")
         return
 
-    print ("workging with namespace {}".format(namespace))
+    print ("working with namespace {}".format(namespace))
     # Append the side token to all strings.
     for bone in local_ik_bones_dict:
         local_ik_bones_dict[bone] = (namespace + side_token + local_ik_bones_dict[bone])
@@ -137,8 +137,10 @@ def ik_to_fk(side=None, limb=None, fk_bones_dict=None, ik_ctrls_dict=None, key=T
     # Based on the limb string incoming, the following keys will be used in the dictionary.
     if(limb == 'leg'):
         targets_list = ['hip', 'ankle', 'knee', 'knee_pv']
+        clean_list = ['toe', 'ball', 'heel']
         amp_pv *= 1.2 # Little extra distance for legs.
     elif(limb == 'arm'):
+        clean_list = []
         targets_list = ['shoulder', 'wrist', 'elbow', 'elbow_pv']
     else:
         pm.warning("Must specific a limb with either 'leg' or 'arm'.")
@@ -229,6 +231,18 @@ def ik_to_fk(side=None, limb=None, fk_bones_dict=None, ik_ctrls_dict=None, key=T
     # If not a leg, regular matchTransform is safe, as rig is likely build 1:1 with the parts.
     if(limb == 'leg'):
         pm.matchTransform(endmost_ctrl, endmost_target, pos=True, rot=True)
+
+        # Clean transforms off of toe, ball and heel, since the bones represent the match, and these
+        # handles will dirty the result.
+        print('Cleaning foot IK...')
+        print("clean list is {}.".format(clean_list))
+        print("Ik_ctrls dict is {}".format(local_ik_ctrls_dict))
+        for handle in clean_list:
+            print ("Getting node {}".format(local_ik_ctrls_dict[handle]))
+            clean_node = pm.PyNode(local_ik_ctrls_dict[handle])
+            clean_node.translate.set(0,0,0)
+            clean_node.rotate.set(0,0,0)
+        
         # Perform relative transform from new position against the joint-orient of the target, since
         # the IK foot control is likely in world-space.
         print ("Counter-rotating feet...")
