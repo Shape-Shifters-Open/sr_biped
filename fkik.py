@@ -116,6 +116,7 @@ def ik_to_fk(side=None, limb=None, fk_bones_dict=None, ik_ctrls_dict=None, key=T
         have it added as a prefix
     '''
 
+
     # Prep the namespace
     if(namespace != ""):
         namespace = (namespace + ":")
@@ -161,6 +162,53 @@ def ik_to_fk(side=None, limb=None, fk_bones_dict=None, ik_ctrls_dict=None, key=T
 
     print("request side token is {}".format(side_token))
 
+
+
+    # Special check for difficult space check:
+    if(limb=='arm'):
+        if(pm.objExists(side_token + local_ik_ctrls_dict['wrist'])):
+
+            wrist_node = pm.PyNode(side_token + local_ik_ctrls_dict['elbow_pv'])
+            print(dir(wrist_node))
+            if(wrist_node.IK_Hand_Crl_space.get() == True):
+
+                result = pm.confirmDialog(
+                                title='SR_Biped',
+                                message=("When Pole Vector\'s Space is set to IK_Hand_Crl_space, "
+                                "calculated result is not-exact."),
+                                button=['Match Anyway', 'Cancel'],
+                                defaultButton='OK',
+                                cancelButton='Cancel',
+                                dismissString='Cancel')
+
+                if result == 'Match Anyway':
+                    pass
+                else:
+                    pm.warning('User stopped the operation.')
+                    return
+    elif(limb=='leg'):
+        if(pm.objExists(side_token + local_ik_ctrls_dict['ankle'])):
+
+            wrist_node = pm.PyNode(side_token + local_ik_ctrls_dict['knee_pv'])
+            print(dir(wrist_node))
+            if(wrist_node.IK_Foot_Crl_space.get() == True):
+
+                result = pm.confirmDialog(
+                                title='SR_Biped',
+                                message=("When Pole Vector\'s Space is set to IK_Foot_Crl_space, "
+                                "calculated result is not-exact."),
+                                button=['Match Anyway', 'Cancel'],
+                                defaultButton='Match Anyway',
+                                cancelButton='Cancel',
+                                dismissString='Cancel')
+
+                if result == 'Match Anyway':
+                    pass
+                else:
+                    pm.warning('User stopped the operation.')
+                    return  
+
+
     # Append the side token to all strings.
     for bone in local_fk_bones_dict:
         local_fk_bones_dict[bone] = (namespace + side_token + local_fk_bones_dict[bone])
@@ -179,10 +227,8 @@ def ik_to_fk(side=None, limb=None, fk_bones_dict=None, ik_ctrls_dict=None, key=T
     pole_vector = pm.PyNode(local_ik_ctrls_dict[targets_list[3]])
     endmost_ctrl = pm.PyNode(local_ik_ctrls_dict[targets_list[1]])
 
-
     # Step one, match ik shoulder 1:1
     pm.matchTransform(topmost_ctrl, topmost_target, pos=True, piv=True)
-
 
     # Based on the calc style chosen, calculate where the PV should go based on the position of the
     # given FK bones.
@@ -190,7 +236,6 @@ def ik_to_fk(side=None, limb=None, fk_bones_dict=None, ik_ctrls_dict=None, key=T
     # TODO: If our keying is going to happen, we should do shoulder and wrist here, Euler filter it
     # then do the PV last.
     
-
     # Get the positions of these objects as dt.Vectors.
     top_pos = dt.Vector(pm.xform(topmost_target, query=True, worldSpace=True, translation=True))
     mid_pos = dt.Vector(pm.xform(middle_target, query=True, worldSpace=True, translation=True))
@@ -201,19 +246,13 @@ def ik_to_fk(side=None, limb=None, fk_bones_dict=None, ik_ctrls_dict=None, key=T
     line_a = end_pos - mid_pos
     line_b = top_pos - mid_pos
 
-    print(line_b)
-
     # Normalize these values:
     line_a.normalize()
     line_b.normalize()
 
-    print(line_b)
-
     # Apply amplification value:
     line_a *= amp_pv
     line_b *= amp_pv
-
-    print(line_b)
 
     # A good positional vector for the pv is calculated.
     pv_pos = (mid_pos - (line_a + line_b))
@@ -263,9 +302,11 @@ def ik_to_fk(side=None, limb=None, fk_bones_dict=None, ik_ctrls_dict=None, key=T
 
     # Put keyframes on all the IK controls if key is true.
     if(key==True):
-        for target_key in targets_list:
-            pm.setKeyframe(local_ik_ctrls_dict[target_key], at=['translate', 'rotate'])
-            pm.filterCurve(local_ik_ctrls_dict[target_key].rotate.x, local_ik_ctrls_dict[target_key].rotate.y, local_ik_ctrls_dict[target_key].rotate.z)
+        # TODO: special case wrist/ankle keying order.
+        #        for target_key in targets_list:
+            pm.setKeyframe(local_ik_ctrls_dict['elbow_pv'], at=['translate'])
+            pm.setKeyframe(local_ik_ctrls_dict['wrist'], at=['translate', 'rotate'])
+            #pm.filterCurve(local_ik_ctrls_dict[target_key].rotate.x, local_ik_ctrls_dict[target_key].rotate.y, local_ik_ctrls_dict[target_key].rotate.z)
             print ("Keying {}".format(local_ik_ctrls_dict[ctrl]))
 
     print("Done.")
