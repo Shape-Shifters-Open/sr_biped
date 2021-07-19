@@ -220,11 +220,11 @@ def ik_to_fk(side=None, limb=None, fk_bones_dict=None, ik_ctrls_dict=None, key=T
 
     # To stop these vectors from ever aiming inside by mistake, we can aim towards the middle_ctrl
     # and add some of that amplitude to make sure it moves out.
-    line_c = mid_pos - dt.Vector(pm.xform(middle_ctrl, q=True, worldSpace=True, translation=True))
-    line_c.normalize()
-    print(line_c)  
+    #line_c = mid_pos - dt.Vector(pm.xform(middle_ctrl, q=True, worldSpace=True, translation=True))
+    #line_c.normalize()
+    #print(line_c)  '
 
-    pv_pos = (pv_pos + (line_c * amp_pv))
+    #pv_pos = (pv_pos + (line_c * amp_pv))
     pm.xform(pole_vector, t=(pv_pos), ws=True)
 
     # Last step: Put the rotation on the wrist.
@@ -265,6 +265,7 @@ def ik_to_fk(side=None, limb=None, fk_bones_dict=None, ik_ctrls_dict=None, key=T
     if(key==True):
         for target_key in targets_list:
             pm.setKeyframe(local_ik_ctrls_dict[target_key], at=['translate', 'rotate'])
+            pm.filterCurve(local_ik_ctrls_dict[target_key].rotate.x, local_ik_ctrls_dict[target_key].rotate.y, local_ik_ctrls_dict[target_key].rotate.z)
             print ("Keying {}".format(local_ik_ctrls_dict[ctrl]))
 
     print("Done.")
