@@ -166,9 +166,9 @@ def ik_to_fk(side=None, limb=None, fk_bones_dict=None, ik_ctrls_dict=None, key=T
 
     # Special check for difficult space check:
     if(limb=='arm'):
-        if(pm.objExists(side_token + local_ik_ctrls_dict['wrist'])):
+        if(pm.objExists(namespace + side_token + local_ik_ctrls_dict['wrist'])):
 
-            wrist_node = pm.PyNode(side_token + local_ik_ctrls_dict['elbow_pv'])
+            wrist_node = pm.PyNode(namespace + side_token + local_ik_ctrls_dict['elbow_pv'])
             print(dir(wrist_node))
             if(wrist_node.IK_Hand_Crl_space.get() == True):
 
@@ -187,9 +187,9 @@ def ik_to_fk(side=None, limb=None, fk_bones_dict=None, ik_ctrls_dict=None, key=T
                     pm.warning('User stopped the operation.')
                     return
     elif(limb=='leg'):
-        if(pm.objExists(side_token + local_ik_ctrls_dict['ankle'])):
+        if(pm.objExists(namespace + side_token + local_ik_ctrls_dict['ankle'])):
 
-            wrist_node = pm.PyNode(side_token + local_ik_ctrls_dict['knee_pv'])
+            wrist_node = pm.PyNode(namespace + side_token + local_ik_ctrls_dict['knee_pv'])
             print(dir(wrist_node))
             if(wrist_node.IK_Foot_Crl_space.get() == True):
 
