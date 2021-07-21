@@ -5,6 +5,7 @@ Module for manipulating attributes,
 macros, converting attribute types between picker and channel box, etc.
 '''
 
+from inspect import Attribute
 import pymel.core as pm
 
 def multi_as_enum(node=None, switch_on=None, attr_list=None):
@@ -48,4 +49,24 @@ def multi_as_enum(node=None, switch_on=None, attr_list=None):
 
     return
 
+
+def zero_attributes(node, ignore_list=[]):
+    '''
+    Zero's out the relevant-to-animation attributes that exist on the given control of a rig.
+    
+    node - transform node of the control to operate on.
+    '''
+
+    attr_list = pm.listAttr(node, v=True, u=True, k=True,)
+
+    for attr in attr_list:
+        if(attr == "index"):
+            continue
+        if(attr in ignore_list):
+            continue
+
+        attribute = eval("node.{}".format(attr))
+        attribute.set(0)
+        print("resetting {}.".format(attribute))
+        
 # EOF
