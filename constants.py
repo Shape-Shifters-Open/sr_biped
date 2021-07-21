@@ -93,6 +93,11 @@ INTERNAL_SPACE_SWITCH_ATTRS = (
             'spineChestTip_Space',
             'shoulder_Space',
             'IK_Hand_Crl_space',
+        ],
+        'fk_shoulder':[
+            'cog_Space',
+            'spineChestTip_Space',
+            'shoulder_Space',
         ]
         }
     )

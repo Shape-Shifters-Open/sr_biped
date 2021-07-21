@@ -86,7 +86,6 @@ def fk_to_ik(side=None, limb=None, ik_bones_dict=None, fk_ctrls_dict=None, key=T
     if(key==True):
         for target_key in targets_list:
             pm.setKeyframe(local_fk_ctrls_dict[target_key], at=['translate', 'rotate'])
-            pm.filterCurve
             print ("Keying {}".format(local_fk_ctrls_dict[ctrl]))
 
     print ("Done.")

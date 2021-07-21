@@ -16,6 +16,7 @@ Email matt@shaperrigs.com for more info.
 
 import fkik
 import attributes
+import spaces
 
 print ("sr_biped module loaded.")
 
