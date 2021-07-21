@@ -71,7 +71,8 @@ INTERNAL_SPACE_SWITCH_ATTRS = (
             'spineChestTip_Space', 
             'shoulder_Space', 
             'spineHip_Space',
-            'cog_Space'
+            'cog_Space',
+            'world_Space',
             ],
         'head':[
             'spineChestTip_Space',
