@@ -6,8 +6,8 @@ Global settings to be read across modules.
 
 srsu_version = "0.1.04pre"
 
-# Standards requested by SSC clients that differ will have to be in an external JSON eventually, to 
-# hide their identity and pipeline design.
+
+# Thinking of depricating this-- The stuff in the constants module is better.
 NAME_STANDARD = {
     'ik_arm':{
         'shoulder_ctrl':'shoulder_Ctrl',

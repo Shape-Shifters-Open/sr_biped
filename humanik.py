@@ -6,7 +6,7 @@ For automated interactions between HumanIK and our rigging standard.
 
 import pymel.core as pm
 import pymel.core.datatypes as dt
-import globals
+import constants as cns
 
 # HIK uses arbitrary indices like so for each body part.
 HIK_CHARACTERIZE_MAP = {
@@ -17,7 +17,7 @@ HIK_CHARACTERIZE_MAP = {
     'LeftForeArm':10,
     'LeftHand':11,
     'LeftLeg':3,
-    'LeftShoudler':18,
+    'LeftShoulder':18,
     'LeftToeBase':16,
     'LeftUpLeg':2,
     'Neck':20,
@@ -34,19 +34,16 @@ HIK_CHARACTERIZE_MAP = {
 }
 
 
-def controls_to_t_pose(z_up=False, 
-    arm_targets=globals.NAME_STANDARD['ik_arm'], 
-    leg_targets=globals.NAME_STANDARD['ik_leg']):
+def controls_to_t_pose(z_up=False, arm_targets=None, leg_targets={}):
     '''
     Set the rig in-scene to t-pose
     '''
-
     # Need to check if there's a rig in the scene.
-    
 
     # First straighten arms
-    straighten_arm(side='l_', z_up=z_up, arm_targets=arm_targets)
-    straighten_arm(side='r_', z_up=z_up, arm_targets=arm_targets)
+    print("Straightening Arms...")
+    straighten_arm(side='L_', z_up=z_up, arm_targets=arm_targets)
+    straighten_arm(side='R_', z_up=z_up, arm_targets=arm_targets)
 
     # ... then legs...
 
@@ -68,16 +65,26 @@ def limb_measure(first_joint, middle_joint, last_joint):
     last_pos = dt.Vector(pm.xform(last_joint, q=True, t=True, ws=True))
     limb_length = ((first_pos - middle_pos) + (middle_pos - last_pos))
 
-    return limb_length
+    return limb_length.length()
 
 
-def straighten_arm(side=None, z_up=False, arm_targets=globals.NAME_STANDARD['ik_arm']):
+def straighten_arm(side=None, z_up=False, arm_targets=None):
     '''
     straighten_arm
 
     Generally called by 'controls_to_t_pose()' but it's accessible outside.
     '''
-    
+    if(arm_targets == None):
+        arm_targets = { 
+            'shoulder_ctrl':cns.INTERNAL_DEF_IK_CTRLS['shoulder'],
+            'elbow_pv_ctrl':cns.INTERNAL_DEF_IK_CTRLS['elbow'],
+            'wrist_ctrl':cns.INTERNAL_DEF_IK_CTRLS['wrist'],
+            'shoulder_joint':cns.INTERNAL_DEF_FK_JNTS['shoulder'],
+            'elbow_joint':cns.INTERNAL_DEF_FK_JNTS['elbow'],
+            'wrist_joint':cns.INTERNAL_DEF_FK_JNTS['wrist']
+        }
+
+
     if(side == None):
         pm.error("No arm given to 'straighten_arm()'.")
         return
@@ -89,6 +96,10 @@ def straighten_arm(side=None, z_up=False, arm_targets=globals.NAME_STANDARD['ik_
 
     # Getting total length of the arm:
     arm_length = limb_measure(shoulder_joint, elbow_joint, wrist_joint)
+    # Flip this if right-side:
+    if(side == 'R_'):
+        arm_length = -arm_length
+
 
     # PyNodify the targets
     elbow_pv = pm.PyNode(side + arm_targets['elbow_pv_ctrl'])
@@ -97,26 +108,29 @@ def straighten_arm(side=None, z_up=False, arm_targets=globals.NAME_STANDARD['ik_
 
     # Reset shoulder before the remaining calculations
     shoulder_ctrl.translate.set(0,0,0)
-    # Move wrist to the distance vector we identified earlier:
-    wrist_ctrl.translate.set(shoulder_ctrl.translate.get() + arm_length)
-
+ 
     # Move controls to align on appropriate axis.
     if(z_up):
-        # Aligned vertically (Z-up mode)
-        elbow_pv.translate.z.set(shoulder_ctrl.translate.z.get())
-        wrist_ctrl.translate.z.set(shoulder_ctrl.translate.z.get())
+        # Find the point in space where the wrist should go and move it there.
+        shoulder_pos = dt.Vector(pm.xform(shoulder_joint, q=True, t=True, ws=True))
+        wrist_pos = shoulder_pos + dt.Vector(0, arm_length, 0) # arm_length for Y in Z up.
+        pm.xform(wrist_ctrl, t=wrist_pos, ws=True)
+
+        # todo - align elbow pv.
+
 
     else:
-        # Aligned vertically (Y-up mode)
-        elbow_pv.translate.y.set(shoulder_ctrl.translate.z.get())
-        wrist_ctrl.translate.y.set(shoulder_ctrl.translate.z.get())
+        # Find the point in space where the wrist should go and move it there.
+        shoulder_pos = dt.Vector(pm.xform(shoulder_joint, q=True, ws=True))
+        wrist_pos = shoulder_pos + dt.Vector(arm_length, 0, 0) # arm_length for Y in Z up.
+        pm.xform(wrist_ctrl, p=wrist_pos, ws=True, t=True)
 
     return
 
 
-def straighten_leg(side=None, z_up=False, leg_targets=globals.NAME_STANDARD['ik_leg']):
+def straighten_leg(side=None, z_up=False, leg_targets=None):
     '''
-    straighten_arm
+    straighten_leg
 
     Generally called by 'controls_to_t_pose()' but it's accessible outside.
     '''
