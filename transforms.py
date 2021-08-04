@@ -4,9 +4,9 @@
 
 import pymel.core as pm
 import pymel.core.datatypes as dt
+import math
 
-
-def aim_at(node, target=None, vec=None, pole_vec=(0,-1,0), axis=1, pole=2):
+def aim_at(node, target=None, vec=None, pole_vec=(0,1,0), axis=0, pole=1):
     '''
     Aim's a node's axis at another point in space and a "pole axis" down a normalized vector.
     Operates in place on the given node-- returns nothing.
@@ -23,14 +23,14 @@ def aim_at(node, target=None, vec=None, pole_vec=(0,-1,0), axis=1, pole=2):
     if(pole == axis):
         pm.error("sr_biped error: Chosen pole and aim axis can't be identical.")
 
-    # Format this input into a dt.Vector:
+    # Format some vectors into the dt.Vector type
     pole_vec = dt.Vector(pole_vec)
+    node_pos = dt.Vector(pm.xform(node, q=True, ws=True, t=True))
 
     # Sort what we are aiming at:
     # If we got a target, use it.
     if(target != None):
         target_pos = dt.Vector(pm.xform(target, q=True, ws=True, t=True))
-        node_pos = dt.Vector(pm.xform(node, q=True, ws=True, t=True))
         target_vec = target_pos - node_pos
         target_vec.normalize()
 
@@ -39,11 +39,17 @@ def aim_at(node, target=None, vec=None, pole_vec=(0,-1,0), axis=1, pole=2):
 
     # If we got a vec, use that instead.
     elif(vec != None):
-        target_vec = vec.normal()
+        target_vec = dt.Vector(vec).normal()
 
     else:
         pm.error("sr_biped error: Either a vector or a target is required.")
         return
+
+    if(target_vec == pole_vec):
+        pm.error("sr_biped error: Target vector and pole vector are identical-- result will be "
+            "unsafe.")
+
+    print(target_vec)
 
     # Step two, "unconstrained" vec; cross product of normalized vector and normalized pole vector 
     # is found and stored.
@@ -55,6 +61,7 @@ def aim_at(node, target=None, vec=None, pole_vec=(0,-1,0), axis=1, pole=2):
 
     # Before we proceed, we shuffle based on the incoming arguments.  Chosen axis to aim...
     x_axis_vec = y_axis_vec = z_axis_vec = None
+
     if(axis == 0):
         x_axis_vec = target_vec
     elif(axis == 1):
@@ -70,6 +77,8 @@ def aim_at(node, target=None, vec=None, pole_vec=(0,-1,0), axis=1, pole=2):
     elif(pole == 2):
         z_axis_vec = clean_pole
 
+    # TODO  We can pop from a dict to see what values remain instead of doing most of this... look 
+    # into it.  This helps us avoid eval and exec.
     # Decide which axis gets the "last_vec" applied based on whether it still contains None
     for last_axis in ['x_axis_vec', 'y_axis_vec', 'z_axis_vec']:
         if(eval(last_axis + ' == None') == True):
@@ -82,18 +91,45 @@ def aim_at(node, target=None, vec=None, pole_vec=(0,-1,0), axis=1, pole=2):
     m2 = list(z_axis_vec)
 
     # Fabricate a bottom row for the scale of the Matrix.
-    m3 = [1, 1, 1, 1]
+    m3 = [0, 0, 0, 1.0]
 
     # Recompose transform data here so it lands inside the matrix correctly.
-    m0.append(target_pos[0])
-    m1.append(target_pos[1])
-    m2.append(target_pos[2])
+    m0.append(node_pos[0])
+    m1.append(node_pos[1])
+    m2.append(node_pos[2])
 
     # Step four, apply the values of each vector to the correct place in the matrix.
     aimed_matrix = dt.Matrix(m0, m1, m2, m3)
 
-    pm.xform(node, m=aimed_matrix)
+    # Save the current ws trans, then pop the matrix in, then re-establish worldspace trans because 
+    # it's untrusted from matrices when multi-scale parents are involved.
+    old_trans = pm.xform(node, q=True, ws=True, t=True)
+    pm.xform(node, m=aimed_matrix, ws=False)
+    pm.xform(node, t=old_trans, ws=True)
 
     print(aimed_matrix.formated())
 
     return
+
+
+def euler_from_matrix(matrix):
+    '''
+    Given a matrix, extract valid Euler angles from it.
+    '''
+
+    sy = math.sqrt((matrix[0][0] * matrix[0][0]) + (matrix[1][0] * matrix[1][0]))
+
+    singular = sy < 1e-6
+
+    # WARNING-- the indices may need swapping!  Right now it's "row/colum"
+    if not singular:
+        x = math.atan2(matrix[2][1], matrix[2][2])
+        y = math.atan2(-matrix[2][0], sy)
+        z = math.atan2(matrix[1][0], matrix[0][0])
+    else:
+        x = math.atan2(-matrix[1][2], matrix[1][1])
+        y = math.atan2(-matrix[2,0], sy)
+        z = 0
+
+    return dt.Vector(x, y, z)
+
