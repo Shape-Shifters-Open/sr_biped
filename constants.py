@@ -101,3 +101,111 @@ INTERNAL_SPACE_SWITCH_ATTRS = (
         ]
         }
     )
+
+
+# HIK constants:
+# HIK uses arbitrary indices like so for each body part.
+HIK_CHARACTERIZE_MAP = {
+    'Head':15,
+    'Hips':1,
+    'LeftArm':9,
+    'LeftFoot':4,
+    'LeftForeArm':10,
+    'LeftHand':11,
+    'LeftLeg':3,
+    'LeftShoulder':18,
+    'LeftToeBase':16,
+    'LeftUpLeg':2,
+    'Neck':20,
+    'RightArm':12,
+    'RightFoot':7,
+    'RightForeArm':13,
+    'RightHand':14,
+    'RightLeg':6,
+    'RightShoulder':19,
+    'RightToeBase':17,
+    'RightUpLeg':5,
+    'Spine':8,
+    'Spine1':23
+}
+
+
+# "Data Driven" instructions for the characterize/constrain operation.
+HIK_PREFIX = 'fbIk_'
+
+# TODO some of the values are from the data acquired from out client.
+HIK_JOINT_DATA = {
+    'leg': {
+        'hip': {
+            'label': 'UpLeg',
+            'fromControl': 'hip_fkControl',
+            'parent': 'pelvis'
+        },
+        'knee': {
+            'label': 'Leg',
+            'fromControl': 'knee_fkControl',
+            'parent': 'hip',
+        },
+        'ankle': {
+            'label':'Foot',
+            'fromControl': 'ankle_fkControl',
+            'parent': 'knee',
+        },
+        'ball': {
+            'label': 'ToeBase',
+            'fromControl': 'ball_fkControl',
+            'parent': 'ankle'
+        }, 
+    },
+
+    'arm': {
+        'clavicle': {
+            'label': 'Shoulder',
+            'fromControl': 'clavicle_control',
+            'parent': 'torso'
+        },
+        'shoulder': {
+            'label': 'Arm',
+            'fromControl:': 'shoulder_fkControl',
+            'parent': 'clavicle',
+        },
+        'elbow':{
+            'label': 'ForeArm',
+            'fromControl': 'elbow_fkControl',
+            'parent': 'shoulder',
+        },
+        'wrist':{
+            'label': 'Hand',
+            'fromControl': 'wrist_fkControl',
+            'parent': 'elbow',
+        },
+    },
+
+    'spine':{
+        'pelvis':{
+            'label': 'Hips',
+            'fromControl': 'pelvis_control',
+            'parent': None,
+        },
+        'midriff': {
+            'label': 'Spine',
+            'fromControl': 'midriff_control',
+            'parent': 'pelvis',
+        },
+        'torso':{
+            'label': 'Spine1',
+            'fromControl': 'torso_control',
+            'parent': 'midriff',
+        },
+        'neck':{
+            'label': 'Neck',
+            'fromControl': 'neck_control',
+            'parent': 'torso',
+        },
+        'head':{
+            'label':'Head',
+            'fromControl': 'head_control',
+            'parent': 'neck'
+        }
+    }
+}
