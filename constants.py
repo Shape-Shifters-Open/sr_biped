@@ -106,27 +106,27 @@ INTERNAL_SPACE_SWITCH_ATTRS = (
 # HIK constants:
 # HIK uses arbitrary indices like so for each body part.
 HIK_CHARACTERIZE_MAP = {
-    'Head':15,
-    'Hips':1,
-    'LeftArm':9,
-    'LeftFoot':4,
-    'LeftForeArm':10,
-    'LeftHand':11,
-    'LeftLeg':3,
-    'LeftShoulder':18,
-    'LeftToeBase':16,
-    'LeftUpLeg':2,
-    'Neck':20,
-    'RightArm':12,
-    'RightFoot':7,
-    'RightForeArm':13,
-    'RightHand':14,
-    'RightLeg':6,
-    'RightShoulder':19,
-    'RightToeBase':17,
-    'RightUpLeg':5,
-    'Spine':8,
-    'Spine1':23
+    'neckHead':15,
+    'spineHip':1,
+    'L_armUpr':9,
+    'L_legAnkle':4,
+    'L_armLwr':10,
+    'L_armWrist':11,
+    'L_legUpr':3,
+    'L_shoulder':18,
+    'L_footMid':16,
+    'L_legUpr':2,
+    'neckBase':20,
+    'R_armUpr':12,
+    'R_legAnkle':7,
+    'R_armLwr':13,
+    'R_armWrist':14,
+    'R_legUpr':6,
+    'R_shoulder':19,
+    'R_footMid':17,
+    'R_legUpr':5,
+    'spineChest':8,
+    'spineChestTip':23
 }
 
 
@@ -209,3 +209,6 @@ HIK_JOINT_DATA = {
         }
     }
 }
+
+# SHJnts in the rig to find for the duplication purpose:
+TOP_JOINT='trajectory_SHJnt'
