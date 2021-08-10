@@ -30,8 +30,6 @@ def duplicate_skeleton(prefix='hik_'):
         joint.rename(new_name)
 
 
-
-
 def characterize_skeleton(ns=""):
     '''
     HIK_characterize(namespace="")
@@ -61,4 +59,70 @@ def characterize_skeleton(ns=""):
         mel.eval('setCharacterObject("{}","{}",{},0);'.format(
             cns.HIK_PREFIX + joint_name, mel.eval('hikGetCurrentCharacter();'), fbIkIndex))
 
-    # next up, constraints!
+    
+def constrain_skeleton():
+    '''
+    constrain the existing HIK skeleton (likely created from a duplication.)
+
+    Constraint mapping is data driven, function runs in place.
+    '''
+
+    # First do a quick check to see if at least a trajectory joint exists with the prefix.
+
+    hik_joints = [jnt for jnt in pm.ls(type='joint') if(cns.HIK_PREFIX in jnt.name())]
+
+    if(len(hik_joints) < 1):
+        pm.error("sr_biped error: Zero joints with the prefix {} exist in the scene. Skeleton "
+        "probably was not characterized first.".format(cns.HIK_PREFIX))
+        return
+
+
+    for body_part in cns.CONSTRAINT_MAPPING.items():
+        mirror = False
+        print("Setting up constraints on {}...".format(body_part[0]))
+        if(body_part[0] in ['arm', 'leg']):
+            print("{} is a mirrored bodypart.".format(body_part[0]))
+            mirror = True
+        else:
+            print("{} is not a mirrored body part.".format(body_part[0]))
+            mirror = False
+        
+        if(mirror):
+            for side in ['L_', 'R_']:
+                for ctrl in body_part[1].items():
+                    constraint_by_mapping(ctrl, side=side)
+        else:
+            for ctrl in body_part[1].items():
+                constraint_by_mapping(ctrl, side='C_')
+
+                    
+
+def constraint_by_mapping(map_dict, side=''):
+    '''
+    Takes a piece of the "mapping dict" found in constants.
+    '''
+
+    c_type = map_dict[1]['type']
+    ctrl = (side + map_dict[0])
+
+    # A not great hack to deal with the fact that controls have a C_ but SHJnts do not.
+    if(side == "C_"):
+        side = ''
+    target = (cns.HIK_PREFIX + side + map_dict[1]['target'])
+
+    print('c_type is {} from {} to {}.  Building...'.format(c_type, ctrl, target))
+
+    if(c_type == 'parent'):
+        pm.parentConstraint(target, ctrl, mo=False)
+    elif(c_type == 'parent_offset'):
+        pm.parentConstraint(target, ctrl, mo=True)
+    elif(c_type == 'orient'):
+        pm.orientConstraint(target, ctrl)
+    elif(c_type == 'point'):
+        pm.pointConstraint(target, ctrl)
+    else:
+        pm.warning("A bad type value was given: {}".format(c_type))
+
+    print("Controls constrained.")
+
+    return

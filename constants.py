@@ -105,28 +105,29 @@ INTERNAL_SPACE_SWITCH_ATTRS = (
 
 # HIK constants:
 # HIK uses arbitrary indices like so for each body part.
+# Note that lower leg is skipped because IK mode for the legs is vastly preferred.
 HIK_CHARACTERIZE_MAP = {
-    'neckHead':15,
     'spineHip':1,
-    'L_armUpr':9,
+    'L_legUpr':2,
+    'L_legLwr':3,
     'L_legAnkle':4,
+    'R_legUpr':5,
+    'R_legLwr':6,
+    'R_legAnkle':7,
+    'spineChest':8,
+    'L_armUpr':9,
     'L_armLwr':10,
     'L_armWrist':11,
-    'L_legUpr':3,
-    'L_shoulder':18,
-    'L_footMid':16,
-    'L_legUpr':2,
-    'neckBase':20,
     'R_armUpr':12,
-    'R_legAnkle':7,
     'R_armLwr':13,
     'R_armWrist':14,
-    'R_legUpr':6,
-    'R_shoulder':19,
+    'neckHead':15,
+    'L_footMid':16,
     'R_footMid':17,
-    'R_legUpr':5,
-    'spineChest':8,
-    'spineChestTip':23
+    'L_shoulder':18,
+    'R_shoulder':19,
+    'neckBase':20,
+    'spineChestTip':23,
 }
 
 
@@ -212,3 +213,49 @@ HIK_JOINT_DATA = {
 
 # SHJnts in the rig to find for the duplication purpose:
 TOP_JOINT='trajectory_SHJnt'
+
+# The mapping of constraints to controls on our standard rig:
+CONSTRAINT_MAPPING = {
+    'leg': {
+        'legUprIK_Ctrl': {
+            'type':'parent',
+            'target':'legUpr',
+        },
+        'legAnkleIK_Ctrl': {
+            'type':'point',
+            'target':'legAnkle',
+        },
+        'LegPV_Ctrl':{
+            'type':'parent_offset',
+            'target':'legUpr',
+        },
+    },
+    'spine': {
+        'SpineFK_01_Ctrl':{
+            'type':'parent',
+            'target':'spineHip',
+        },
+        'SpineFK_02_Ctrl':{
+            'type':'parent',
+            'target':'spineChest',
+        },
+        'SpineChestFK_Ctrl':{
+            'type':'orient',
+            'target':'spineChestTip',
+        },
+    },
+    'arm': {
+        'shoulder_Ctrl':{
+            'type':'orient',
+            'target':'shoulder'
+        },
+        'armUprFK_Ctrl':{
+            'type':'parent',
+            'target':'armUpr'
+        },
+        'armLwrFK_Ctrl':{
+            'type':'parent',    
+            'target':'armLwr',
+        }   
+    }
+}
