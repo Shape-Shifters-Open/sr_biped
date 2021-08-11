@@ -105,6 +105,10 @@ def constraint_by_mapping(map_dict, side=''):
     c_type = map_dict[1]['type']
     ctrl = (side + map_dict[0])
 
+    # Brief hack for Cogs, they don't have a prefix in our standard.
+    if(ctrl == 'C_Cog_Ctrl'):
+        ctrl = 'Cog_Ctrl'
+
     # A not great hack to deal with the fact that controls have a C_ but SHJnts do not.
     if(side == "C_"):
         side = ''
@@ -117,11 +121,14 @@ def constraint_by_mapping(map_dict, side=''):
     elif(c_type == 'parent_offset'):
         pm.parentConstraint(target, ctrl, mo=True)
     elif(c_type == 'orient'):
-        pm.orientConstraint(target, ctrl)
+        pm.orientConstraint(target, ctrl, mo=True)
     elif(c_type == 'point'):
         pm.pointConstraint(target, ctrl)
+    elif(c_type == 'point_offset'):
+        pm.pointConstraint(target, ctrl, mo=True)
     else:
-        pm.warning("A bad type value was given: {}".format(c_type))
+        pm.error("A bad type value was given: {}".format(c_type))
+        return
 
     print("Controls constrained.")
 

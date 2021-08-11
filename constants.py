@@ -218,25 +218,21 @@ TOP_JOINT='trajectory_SHJnt'
 CONSTRAINT_MAPPING = {
     'leg': {
         'legUprIK_Ctrl': {
-            'type':'parent',
+            'type':'point_offset',
             'target':'legUpr',
         },
         'legAnkleIK_Ctrl': {
-            'type':'point',
-            'target':'legAnkle',
-        },
-        'LegPV_Ctrl':{
             'type':'parent_offset',
-            'target':'legUpr',
+            'target':'legAnkle',
         },
     },
     'spine': {
-        'SpineFK_01_Ctrl':{
-            'type':'parent',
+        'Cog_Ctrl':{
+            'type':'parent_offset',
             'target':'spineHip',
         },
         'SpineFK_02_Ctrl':{
-            'type':'parent',
+            'type':'orient',
             'target':'spineChest',
         },
         'SpineChestFK_Ctrl':{
