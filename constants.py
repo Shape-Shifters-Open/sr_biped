@@ -246,12 +246,21 @@ CONSTRAINT_MAPPING = {
             'target':'shoulder'
         },
         'armUprFK_Ctrl':{
-            'type':'parent',
+            'type':'orient',
             'target':'armUpr'
         },
         'armLwrFK_Ctrl':{
-            'type':'parent',    
+            'type':'orient',    
             'target':'armLwr',
         }   
     }
 }
+
+# Properties on the actual rig that must change in order to operate sanely when bound
+HIK_ATTRIBUTE_SETTINGS={
+    'L_ArmSetting_Ctrl.ikBlend':0,
+    'R_ArmSetting_Ctrl.ikBlend':0,
+    'L_LegPV_Ctrl.IK_Foot_Crl_space':1,
+    'R_LegPV_Ctrl.IK_Foot_Crl_space':1,
+}
+
