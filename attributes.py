@@ -66,7 +66,9 @@ def zero_attributes(node, ignore_list=[]):
             continue
 
         attribute = eval("node.{}".format(attr))
-        attribute.set(0)
-        print("resetting {}.".format(attribute))
+        # Some attributes are not-zero as a default ('zero out' is an industry wide misnomer!)
+        default_value = pm.attributeQuery(attr, n=node, listDefault=True)[0]
+        attribute.set(default_value)
+        print("resetting {} to {}.".format(attribute, default_value))
         
 # EOF
