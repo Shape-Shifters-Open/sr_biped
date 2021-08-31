@@ -60,7 +60,7 @@ INTERNAL_DEF_IK_CTRLS = (
     )
 
 # Naming convention tokens
-INTERNAL_SIDE_TOKENS = { 'left':'L_', 'right':'R_' }
+INTERNAL_SIDE_TOKENS = { 'left':'L_', 'right':'R_', 'centre':'C_' }
 
 
 # Attribute names of space-switch targets:

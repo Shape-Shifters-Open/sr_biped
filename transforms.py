@@ -18,6 +18,8 @@ def aim_at(node, target=None, vec=None, pole_vec=(0,1,0), axis=0, pole=1):
     axis - the axis along which to aim down. (enumated x,y,z where x=0)
     pole - the "pole" axis, which will aim at the vec (enumerated x,y,z where x=0)
     '''
+    # FixcZ!
+
 
     # Check for bad args:
     if(pole == axis):

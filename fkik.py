@@ -50,17 +50,16 @@ def fk_to_ik(side=None, limb=None, ik_bones_dict=None, fk_ctrls_dict=None, key=T
     else:
         local_fk_ctrls_dict = fk_ctrls_dict.copy()
 
-    if(side == None):      
-        pm.error("Specify a side flag (Example fk_to_ik(side='l') )")
-        return
-
-    if(side.upper() in ['L', 'LEFT', 'L_', 'LFT', 'LT']):
-        side_token = cons.INTERNAL_SIDE_TOKENS['left']
-    elif(side.upper() in ['R', 'RIGHT', 'R_', 'RGT', 'RT']):
-        side_token = cons.INTERNAL_SIDE_TOKENS['right']
+    if(side != None):
+        if(side.upper() in ['L', 'LEFT', 'L_', 'LFT', 'LT']):
+            side_token = cons.INTERNAL_SIDE_TOKENS['left']
+        elif(side.upper() in ['R', 'RIGHT', 'R_', 'RGT', 'RT']):
+            side_token = cons.INTERNAL_SIDE_TOKENS['right']
+        elif(side.upper() in ['C', 'CENTRE', 'CENTER', 'C_', 'CNT', 'CT']):
+            side_token = cons.INTERNAL_SIDE_TOKENS['centre']
     else:
-        pm.error("Given side-flag string was weird.  Try 'r' or 'l'.")
-        return
+        print("No side token given, assuming this is a centre-positioned or asymmetrical limb.")
+        side_token = ''
 
     print ("working with namespace {}".format(namespace))
     # Append the side token to all strings.
@@ -95,7 +94,7 @@ def fk_to_ik(side=None, limb=None, ik_bones_dict=None, fk_ctrls_dict=None, key=T
 
     
 def ik_to_fk(side=None, limb=None, fk_bones_dict=None, ik_ctrls_dict=None, key=True, 
-    foot_rot_comp=None, amp_pv=40.0, namespace=""):
+    foot_rot_comp=None, amp_pv=40.0, stump=False, namespace=""):
     '''
     Move IK controls to match FK position.
     Ready to receive rig info for any rig with a 'copied arm' set up for fk/ik.  Assuming that the 
@@ -115,7 +114,6 @@ def ik_to_fk(side=None, limb=None, fk_bones_dict=None, ik_ctrls_dict=None, key=T
     namespace - Passes a string of the anticipated namespace so that the handle/joint constants can 
         have it added as a prefix
     '''
-
 
     # Prep the namespace
     if(namespace != ""):
@@ -148,21 +146,17 @@ def ik_to_fk(side=None, limb=None, fk_bones_dict=None, ik_ctrls_dict=None, key=T
         return
 
     # Append the side flags
-    if(side == None):      
-        pm.error("Specify a side flag (Example fk_to_ik(side='l') )")
-        return
 
-    if(side.upper() in ['L', 'LEFT', 'L_', 'LFT', 'LT']):
-        side_token = cons.INTERNAL_SIDE_TOKENS['left']
-    elif(side.upper() in ['R', 'RIGHT', 'R_', 'RGT', 'RT']):
-        side_token = cons.INTERNAL_SIDE_TOKENS['right']
+    if(side != None):
+        if(side.upper() in ['L', 'LEFT', 'L_', 'LFT', 'LT']):
+            side_token = cons.INTERNAL_SIDE_TOKENS['left']
+        elif(side.upper() in ['R', 'RIGHT', 'R_', 'RGT', 'RT']):
+            side_token = cons.INTERNAL_SIDE_TOKENS['right']
+        elif(side.upper() in ['C', 'CENTRE', 'CENTER', 'C_', 'CNT', 'CT']):
+            side_token = cons.INTERNAL_SIDE_TOKENS['centre']
     else:
-        pm.error("Given side-flag string was weird.  Try 'r' or 'l'.")
-        return
-
-    print("request side token is {}".format(side_token))
-
-
+        print("No side token given, assuming this is a centre-positioned or asymmetrical limb.")
+        side_token = ''
 
     # Special check for difficult space check:
     if(limb=='arm'):
@@ -187,27 +181,42 @@ def ik_to_fk(side=None, limb=None, fk_bones_dict=None, ik_ctrls_dict=None, key=T
                     pm.warning('User stopped the operation.')
                     return
     elif(limb=='leg'):
+        toe_exists = True
         if(pm.objExists(namespace + side_token + local_ik_ctrls_dict['ankle'])):
 
             wrist_node = pm.PyNode(namespace + side_token + local_ik_ctrls_dict['knee_pv'])
             print(dir(wrist_node))
-            if(wrist_node.IK_Foot_Crl_space.get() == True):
 
-                result = pm.confirmDialog(
-                                title='SR_Biped',
-                                message=("When Pole Vector\'s Space is set to IK_Foot_Crl_space, "
-                                "calculated result is not-exact."),
-                                button=['Match Anyway', 'Cancel'],
-                                defaultButton='Match Anyway',
-                                cancelButton='Cancel',
-                                dismissString='Cancel')
+            # If the wrist node (in this case an ankle) has IK_Foot_Crl_space, then we warn about 
+            # match accuracy:
+            if(pm.hasAttr(wrist_node, 'IK_Foot_Crl')):
+                if(wrist_node.IK_Foot_Crl_space.get() == True):
 
-                if result == 'Match Anyway':
-                    pass
-                else:
-                    pm.warning('User stopped the operation.')
-                    return  
+                    result = pm.confirmDialog(
+                                    title='SR_Biped',
+                                    message=("When Pole Vector\'s Space is set to IK_Foot_Crl_space, "
+                                    "calculated result is not-exact."),
+                                    button=['Match Anyway', 'Cancel'],
+                                    defaultButton='Match Anyway',
+                                    cancelButton='Cancel',
+                                    dismissString='Cancel')
 
+                    if result == 'Match Anyway':
+                        pass
+                    else:
+                        pm.warning('User stopped the operation.')
+                        return
+            else:
+                print("This doesn't appear to be a normal human foot.  Skipping toe alignment.")
+
+
+    # If we are dealing with a 'stump' we end calculation at the wrist joint or the ankle joint, no
+    # heel, toes, ball, etc.  We do this by getting rid of them from the dict so they won't be
+    # iterated over.
+    if(stump):
+        for key in ['ball', 'toe', 'heel']:
+            print("Ignoring {}".format(key))
+            local_ik_ctrls_dict.pop(key)
 
     # Append the side token to all strings.
     for bone in local_fk_bones_dict:
@@ -272,33 +281,42 @@ def ik_to_fk(side=None, limb=None, fk_bones_dict=None, ik_ctrls_dict=None, key=T
         pm.matchTransform(endmost_ctrl, endmost_target, pos=True, rot=True)
 
         # Clean transforms off of toe, ball and heel, since the bones represent the match, and these
-        # handles will dirty the result.
-        print('Cleaning foot IK...')
-        print("clean list is {}.".format(clean_list))
-        print("Ik_ctrls dict is {}".format(local_ik_ctrls_dict))
-        for handle in clean_list:
-            print ("Getting node {}".format(local_ik_ctrls_dict[handle]))
-            clean_node = pm.PyNode(local_ik_ctrls_dict[handle])
-            clean_node.translate.set(0,0,0)
-            clean_node.rotate.set(0,0,0)
-        
+        # handles will dirty the result.  If this is a stump, we don't bother with either.
+
+        if(stump == False):
+            print('Cleaning foot IK...')
+            print("clean list is {}.".format(clean_list))
+            print("Ik_ctrls dict is {}".format(local_ik_ctrls_dict))
+            for handle in clean_list:
+                print ("Getting node {}".format(local_ik_ctrls_dict[handle]))
+                clean_node = pm.PyNode(local_ik_ctrls_dict[handle])
+                clean_node.translate.set(0,0,0)
+                clean_node.rotate.set(0,0,0)
+            
+
+        else:
+            print("This is a stump with no heel, ball or toe.")
+            pm.matchTransform(endmost_ctrl, endmost_target, pos=True, rot=True)
+
         # Perform relative transform from new position against the joint-orient of the target, since
         # the IK foot control is likely in world-space.
         print ("Counter-rotating feet...")
         if(side_token == cons.INTERNAL_SIDE_TOKENS['left']):
             pm.xform(endmost_ctrl, r=True, os=True, ro=foot_rot_comp)
-        else:
+        elif(side_token == cons.INTERNAL_SIDE_TOKENS['right']):
             pass
             pm.xform(
                 endmost_ctrl, r=True, os=True, 
                 ro=(foot_rot_comp[0]-180, foot_rot_comp[1], foot_rot_comp[2] % 360)
                 )
+        else:
+            pm.xform(endmost_ctrl, r=True, os=True, ro=foot_rot_comp)
+
     else:
         pm.matchTransform(endmost_ctrl, endmost_target, pos=True, rot=True)
 
     # Last step is to get the orientation of the elbow control
     pm.matchTransform(middle_ctrl, middle_target, rot=True)
-
 
     # Put keyframes on all the IK controls if key is true.
     if(key==True):
