@@ -15,6 +15,7 @@ import pymel.core as pm
 import pymel.core.datatypes as dt
 import constants as cons
 import maya.cmds as cmds
+import suite as su
 
 def fk_to_ik(side=None, limb=None, ik_bones_dict=None, fk_ctrls_dict=None, key=True, namespace=""):
     '''
@@ -332,7 +333,9 @@ def ik_to_fk(side=None, limb=None, fk_bones_dict=None, ik_ctrls_dict=None, key=T
     return
 
 
-def bake_ik_to_fk(side=None, limb=None, fk_bones_dict=None, ik_ctrls_dict=None, namespace=""):
+def bake_ik_to_fk(
+    side=None, limb=None, fk_bones_dict=None, ik_ctrls_dict=None, namespace="", stump=False
+    ):
     '''
     bake_ik_to_fk
 
@@ -349,8 +352,11 @@ def bake_ik_to_fk(side=None, limb=None, fk_bones_dict=None, ik_ctrls_dict=None, 
         ik_ctrls_dict = cons.INTERNAL_DEF_IK_CTRLS.copy()
 
     import maya.mel
-    PlayBackSlider = maya.mel.eval('$tmpVar=$gPlayBackSlider')
-    frame_range = pm.timeControl(PlayBackSlider, q=True, ra=True)
+
+    frame_range = su.frame_selection()
+    if(frame_range == False):
+        pm.error("Nothing was specified in the frame slider selection.")
+        return
 
     # Move the time slider to the beginning of the selected range.
     pm.currentTime(frame_range[0], edit=True)
@@ -363,7 +369,7 @@ def bake_ik_to_fk(side=None, limb=None, fk_bones_dict=None, ik_ctrls_dict=None, 
         # Bake the ik controllers to the position the fk controls are on this frame:
         ik_to_fk(
             side=side, limb=limb, key=True, fk_bones_dict=fk_bones_dict, 
-            ik_ctrls_dict=ik_ctrls_dict, namespace=namespace)
+            ik_ctrls_dict=ik_ctrls_dict, namespace=namespace, stump=stump)
         next_frame = (pm.currentTime(q=True) + 1)
         pm.currentTime(next_frame, edit=True)
         pm.refresh(cv=True)
@@ -371,7 +377,9 @@ def bake_ik_to_fk(side=None, limb=None, fk_bones_dict=None, ik_ctrls_dict=None, 
     print ("Done.")
 
 
-def bake_fk_to_ik(side=None, limb=None, ik_bones_dict=None, fk_ctrls_dict=None, namespace=""):
+def bake_fk_to_ik(
+    side=None, limb=None, ik_bones_dict=None, fk_ctrls_dict=None, namespace="", stump=False
+    ):
     '''
     bake_fk_to_ik
 
@@ -388,9 +396,10 @@ def bake_fk_to_ik(side=None, limb=None, ik_bones_dict=None, fk_ctrls_dict=None, 
     if(fk_ctrls_dict == None):
         fk_ctrls_dict = cons.INTERNAL_DEF_FK_CTRLS.copy()
 
-    import maya.mel
-    PlayBackSlider = maya.mel.eval('$tmpVar=$gPlayBackSlider')
-    frame_range = pm.timeControl(PlayBackSlider, q=True, ra=True)
+    frame_range = su.frame_selection()
+    if(frame_range == False):
+        pm.error("Nothing was specified in the frame slider selection.")
+        return
 
     # Move the time slider to the beginning of the selected range.
     pm.currentTime(frame_range[0], edit=True)
@@ -401,7 +410,7 @@ def bake_fk_to_ik(side=None, limb=None, ik_bones_dict=None, fk_ctrls_dict=None, 
         # Bake the fk controllers to the position the fk controls are on this frame:
         fk_to_ik(
             side=side, limb=limb, key=True, ik_bones_dict=ik_bones_dict, 
-            fk_ctrls_dict=fk_ctrls_dict, namespace=namespace)
+            fk_ctrls_dict=fk_ctrls_dict, namespace=namespace, stump=stump)
         next_frame = (pm.currentTime(q=True) + 1)
         pm.currentTime(next_frame, edit=True)
         pm.refresh(cv=True)
