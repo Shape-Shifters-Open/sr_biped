@@ -10,19 +10,18 @@ upper arm and lower-arm.
 For format requirements of the dict, see constants.py
 '''
 
-from attributes import multi_as_enum
 import pymel.core as pm
 import pymel.core.datatypes as dt
 import constants as cons
-import maya.cmds as cmds
 import suite as su
+
 
 def fk_to_ik(side=None, limb=None, ik_bones_dict=None, fk_ctrls_dict=None, key=True, namespace=""):
     '''
     Match fk controls to ik, but executing match xforms of the controllers to the bones.  Generic
     and ready to receive rig info for any rig with a 'copied arm' set up for fk/ik.  Assuming that
     the rig is well build and controller xforms match these bone xforms, result will be accurate.
-    
+
     ik_bones_dict - dictionary containing keys 'shoulder' and 'elbow', etc, listing the ik bones.
     fk_ctrls_dict - dictionary containing keys 'shoulder' and 'elbow' etc, listing fk controls.
     '''
@@ -45,7 +44,7 @@ def fk_to_ik(side=None, limb=None, ik_bones_dict=None, fk_ctrls_dict=None, key=T
         local_ik_bones_dict = cons.INTERNAL_DEF_IK_JNTS.copy()
     else:
         local_ik_bones_dict = ik_bones_dict.copy()
-    
+
     if(fk_ctrls_dict == None):
         local_fk_ctrls_dict = cons.INTERNAL_DEF_FK_CTRLS.copy()
     else:
@@ -75,16 +74,17 @@ def fk_to_ik(side=None, limb=None, ik_bones_dict=None, fk_ctrls_dict=None, key=T
     # Iterate through the list of key names, perform the xform matching.
     for target_key in targets_list:
         print("Matching transforms of {} to {}...".format(
-            (namespace + side_token + local_fk_ctrls_dict[target_key]), 
+            (namespace + side_token + local_fk_ctrls_dict[target_key]),
             local_ik_bones_dict[target_key]
-            ))
+        ))
+
         # PyNode these up:
         target_node = pm.PyNode(local_fk_ctrls_dict[target_key])
         copy_node = pm.PyNode(local_ik_bones_dict[target_key])
         pm.matchTransform(target_node, copy_node, rot=True, pos=True, piv=True)
 
     # Put keyframes on all the FK controls if key is true.
-    if(key==True):
+    if(key):
         for target_key in targets_list:
             pm.setKeyframe(local_fk_ctrls_dict[target_key], at=['translate', 'rotate'])
             print ("Keying {}".format(local_fk_ctrls_dict[ctrl]))
@@ -93,14 +93,14 @@ def fk_to_ik(side=None, limb=None, ik_bones_dict=None, fk_ctrls_dict=None, key=T
 
     return
 
-    
-def ik_to_fk(side=None, limb=None, fk_bones_dict=None, ik_ctrls_dict=None, key=True, 
-    foot_rot_comp=None, amp_pv=40.0, stump=False, namespace=""):
+
+def ik_to_fk(side=None, limb=None, fk_bones_dict=None, ik_ctrls_dict=None, key=True,
+             foot_rot_comp=None, amp_pv=40.0, stump=False, namespace=""):
     '''
     Move IK controls to match FK position.
     Ready to receive rig info for any rig with a 'copied arm' set up for fk/ik.  Assuming that the 
     rig is well build and controller xforms match these bone xforms, result will be accurate.
-    
+
     usage:
     ik_to_fk(side=string, fk_bones_dict=dict, ik_controls_dict=dict)
 
@@ -121,17 +121,17 @@ def ik_to_fk(side=None, limb=None, fk_bones_dict=None, ik_ctrls_dict=None, key=T
         namespace = (namespace + ":")
 
     # Interally apply the constant due to the "mutable default args problem".
-    if(fk_bones_dict == None):
+    if(fk_bones_dict is None):
         local_fk_bones_dict = cons.INTERNAL_DEF_FK_JNTS.copy()
     else:
         local_fk_bones_dict = fk_bones_dict.copy()
 
-    if(ik_ctrls_dict == None):
+    if(ik_ctrls_dict is None):
         local_ik_ctrls_dict = cons.INTERNAL_DEF_IK_CTRLS.copy()
     else:
         local_ik_ctrls_dict = ik_ctrls_dict.copy()
 
-    if(foot_rot_comp == None):
+    if(foot_rot_comp is None):
         foot_rot_comp = (0, 0, 90)
 
     # Based on the limb string incoming, the following keys will be used in the dictionary.
@@ -148,7 +148,7 @@ def ik_to_fk(side=None, limb=None, fk_bones_dict=None, ik_ctrls_dict=None, key=T
 
     # Append the side flags
 
-    if(side != None):
+    if(side is not None):
         if(side.upper() in ['L', 'LEFT', 'L_', 'LFT', 'LT']):
             side_token = cons.INTERNAL_SIDE_TOKENS['left']
         elif(side.upper() in ['R', 'RIGHT', 'R_', 'RGT', 'RT']):
@@ -160,7 +160,7 @@ def ik_to_fk(side=None, limb=None, fk_bones_dict=None, ik_ctrls_dict=None, key=T
         side_token = ''
 
     # Special check for difficult space check:
-    if(limb=='arm'):
+    if(limb == 'arm'):
         if(pm.objExists(namespace + side_token + local_ik_ctrls_dict['wrist'])):
 
             wrist_node = pm.PyNode(namespace + side_token + local_ik_ctrls_dict['elbow_pv'])
@@ -181,8 +181,7 @@ def ik_to_fk(side=None, limb=None, fk_bones_dict=None, ik_ctrls_dict=None, key=T
                 else:
                     pm.warning('User stopped the operation.')
                     return
-    elif(limb=='leg'):
-        toe_exists = True
+    elif(limb == 'leg'):
         if(pm.objExists(namespace + side_token + local_ik_ctrls_dict['ankle'])):
 
             wrist_node = pm.PyNode(namespace + side_token + local_ik_ctrls_dict['knee_pv'])
@@ -191,25 +190,24 @@ def ik_to_fk(side=None, limb=None, fk_bones_dict=None, ik_ctrls_dict=None, key=T
             # If the wrist node (in this case an ankle) has IK_Foot_Crl_space, then we warn about 
             # match accuracy:
             if(pm.hasAttr(wrist_node, 'IK_Foot_Crl')):
-                if(wrist_node.IK_Foot_Crl_space.get() == True):
-
+                if(wrist_node.IK_Foot_Crl_space.get()):
                     result = pm.confirmDialog(
-                                    title='SR_Biped',
-                                    message=("When Pole Vector\'s Space is set to IK_Foot_Crl_space, "
-                                    "calculated result is not-exact."),
-                                    button=['Match Anyway', 'Cancel'],
-                                    defaultButton='Match Anyway',
-                                    cancelButton='Cancel',
-                                    dismissString='Cancel')
+                        title='SR_Biped',
+                        message=("When Pole Vector\'s Space is set to IK_Foot_Crl_space, "
+                                 "calculated result is not-exact."),
+                        button=['Match Anyway', 'Cancel'],
+                        defaultButton='Match Anyway',
+                        cancelButton='Cancel',
+                        dismissString='Cancel')
 
                     if result == 'Match Anyway':
                         pass
                     else:
                         pm.warning('User stopped the operation.')
                         return
+
             else:
                 print("This doesn't appear to be a normal human foot.  Skipping toe alignment.")
-
 
     # If we are dealing with a 'stump' we end calculation at the wrist joint or the ankle joint, no
     # heel, toes, ball, etc.  We do this by getting rid of them from the dict so they won't be
@@ -245,7 +243,7 @@ def ik_to_fk(side=None, limb=None, fk_bones_dict=None, ik_ctrls_dict=None, key=T
 
     # TODO: If our keying is going to happen, we should do shoulder and wrist here, Euler filter it
     # then do the PV last.
-    
+
     # Get the positions of these objects as dt.Vectors.
     top_pos = dt.Vector(pm.xform(topmost_target, query=True, worldSpace=True, translation=True))
     mid_pos = dt.Vector(pm.xform(middle_target, query=True, worldSpace=True, translation=True))
@@ -269,11 +267,11 @@ def ik_to_fk(side=None, limb=None, fk_bones_dict=None, ik_ctrls_dict=None, key=T
 
     # To stop these vectors from ever aiming inside by mistake, we can aim towards the middle_ctrl
     # and add some of that amplitude to make sure it moves out.
-    #line_c = mid_pos - dt.Vector(pm.xform(middle_ctrl, q=True, worldSpace=True, translation=True))
-    #line_c.normalize()
-    #print(line_c)  '
+    # line_c = mid_pos - dt.Vector(pm.xform(middle_ctrl, q=True, worldSpace=True, translation=True))
+    # line_c.normalize()
+    # print(line_c)  '
 
-    #pv_pos = (pv_pos + (line_c * amp_pv))
+    # pv_pos = (pv_pos + (line_c * amp_pv))
     pm.xform(pole_vector, t=(pv_pos), ws=True)
 
     # Last step: Put the rotation on the wrist.
@@ -284,16 +282,15 @@ def ik_to_fk(side=None, limb=None, fk_bones_dict=None, ik_ctrls_dict=None, key=T
         # Clean transforms off of toe, ball and heel, since the bones represent the match, and these
         # handles will dirty the result.  If this is a stump, we don't bother with either.
 
-        if(stump == False):
+        if(stump is False):
             print('Cleaning foot IK...')
             print("clean list is {}.".format(clean_list))
             print("Ik_ctrls dict is {}".format(local_ik_ctrls_dict))
             for handle in clean_list:
                 print ("Getting node {}".format(local_ik_ctrls_dict[handle]))
                 clean_node = pm.PyNode(local_ik_ctrls_dict[handle])
-                clean_node.translate.set(0,0,0)
-                clean_node.rotate.set(0,0,0)
-            
+                clean_node.translate.set(0, 0, 0)
+                clean_node.rotate.set(0, 0, 0)
 
         else:
             print("This is a stump with no heel, ball or toe.")
@@ -307,8 +304,8 @@ def ik_to_fk(side=None, limb=None, fk_bones_dict=None, ik_ctrls_dict=None, key=T
         elif(side_token == cons.INTERNAL_SIDE_TOKENS['right']):
             pass
             pm.xform(
-                endmost_ctrl, r=True, os=True, 
-                ro=(foot_rot_comp[0]-180, foot_rot_comp[1], foot_rot_comp[2] % 360)
+                endmost_ctrl, r=True, os=True,
+                ro=(foot_rot_comp[0] - 180, foot_rot_comp[1], foot_rot_comp[2] % 360)
                 )
         else:
             pm.xform(endmost_ctrl, r=True, os=True, ro=foot_rot_comp)
@@ -320,7 +317,7 @@ def ik_to_fk(side=None, limb=None, fk_bones_dict=None, ik_ctrls_dict=None, key=T
     pm.matchTransform(middle_ctrl, middle_target, rot=True)
 
     # Put keyframes on all the IK controls if key is true.
-    if(key==True):
+    if(key):
         # TODO: special case wrist/ankle keying order.
         #        for target_key in targets_list:
             pm.setKeyframe(local_ik_ctrls_dict['elbow_pv'], at=['translate'])
@@ -346,21 +343,19 @@ def bake_ik_to_fk(
     '''
 
     # Interally apply the constant due to the "mutable default args problem".
-    if(fk_bones_dict == None):
+    if(fk_bones_dict is None):
         fk_bones_dict = cons.INTERNAL_DEF_FK_JNTS.copy()
-    if(ik_ctrls_dict == None):
+    if(ik_ctrls_dict is None):
         ik_ctrls_dict = cons.INTERNAL_DEF_IK_CTRLS.copy()
 
-    import maya.mel
-
     frame_range = su.frame_selection()
-    if(frame_range == False):
+    if(frame_range is False):
         pm.error("Nothing was specified in the frame slider selection.")
         return
 
     # Move the time slider to the beginning of the selected range.
     pm.currentTime(frame_range[0], edit=True)
-    
+
     print("DEBUG: dict is {}".format(fk_bones_dict))
 
     # Iterate through the frame range selected.
@@ -368,7 +363,7 @@ def bake_ik_to_fk(
 
         # Bake the ik controllers to the position the fk controls are on this frame:
         ik_to_fk(
-            side=side, limb=limb, key=True, fk_bones_dict=fk_bones_dict, 
+            side=side, limb=limb, key=True, fk_bones_dict=fk_bones_dict,
             ik_ctrls_dict=ik_ctrls_dict, namespace=namespace, stump=stump)
         next_frame = (pm.currentTime(q=True) + 1)
         pm.currentTime(next_frame, edit=True)
@@ -391,19 +386,19 @@ def bake_fk_to_ik(
     '''
 
     # Assign defaults like so to dodge the mutable default argument issue:
-    if(ik_bones_dict == None):
+    if(ik_bones_dict is None):
         ik_bones_dict = cons.INTERNAL_DEF_IK_JNTS.copy()
-    if(fk_ctrls_dict == None):
+    if(fk_ctrls_dict is None):
         fk_ctrls_dict = cons.INTERNAL_DEF_FK_CTRLS.copy()
 
     frame_range = su.frame_selection()
-    if(frame_range == False):
+    if(frame_range is False):
         pm.error("Nothing was specified in the frame slider selection.")
         return
 
     # Move the time slider to the beginning of the selected range.
     pm.currentTime(frame_range[0], edit=True)
-    
+
     # Iterate through the frame range selected.
     while(pm.currentTime(q=True) < frame_range[1]):
 
@@ -420,7 +415,6 @@ def bake_fk_to_ik(
     return
 
 
-
 def safe_snap(subject_node, target_node, trans=True, rot=True):
     '''
     safe_snap
@@ -435,14 +429,14 @@ def safe_snap(subject_node, target_node, trans=True, rot=True):
 
     print ("Performing a hard match of {} to {}.".format(subject_node, target_node))
 
-	# Get details from the target_node.
-    target_rot = pm.xform( target_node, q=True, ws=True, ro=True )
-    target_trans = pm.xform( target_node, q=True, ws=True, t=True )
+    # Get details from the target_node.
+    target_rot = pm.xform(target_node, q=True, ws=True, ro=True)
+    target_trans = pm.xform(target_node, q=True, ws=True, t=True)
 
     # I've been warned about the ws flags behaving deceptively.
-    if(trans==True):
-        pm.xform( subject_node, ws=True, t=target_trans )
-    if(rot==True):
-        pm.xform( subject_node, ws=True, ro=target_rot )
+    if(trans):
+        pm.xform(subject_node, ws=True, t=target_trans)
+    if(rot):
+        pm.xform(subject_node, ws=True, ro=target_rot)
 
     return
