@@ -1,5 +1,5 @@
 import pymel.core as pm
-import sr_biped.fkik as fkik
+from sr_biped import fkik
 
 # Constants
 ik_bones_dict = {
@@ -8,7 +8,17 @@ ik_bones_dict = {
     'wrist': 'armWristIK_drv',
     'hip': 'legUprIK_drv',
     'knee': 'legLwrIK_drv',
-    'ankle': 'legAnkleIK_drv'
+    'ankle': 'legAnkleIK_drv',
+
+    'rev_bk_hip': 'revBkLegUprIK_drv',
+    'rev_bk_knee': 'revBkLegLwr01IK_drv',
+    'rev_bk_ankle': 'revBkLegLwr02IK_drv',
+    'rev_bk_foot': 'revBkLegAnkleIK_drv',
+
+    'rev_fr_hip': 'revFrLegUprIK_drv',
+    'rev_fr_knee': 'revFrLegLwr01IK_drv',
+    'rev_fr_ankle': 'revFrLegLwr02IK_drv',
+    'rev_fr_foot': 'revFrLegAnkleIK_drv',
 }
 
 fk_bones_dict = {
@@ -18,6 +28,16 @@ fk_bones_dict = {
     'hip': 'legUprFK_drv',
     'knee': 'legLwrFK_drv',
     'ankle': 'legAnkleFK_drv',
+
+    'rev_bk_hip': 'revBkLegUprFK_drv',
+    'rev_bk_knee': 'revBkLegLwr01FK_drv',
+    'rev_bk_knee2': 'revBkLegLwr02FK_drv',
+    'rev_bk_ankle': 'revBkLegAnkleFK_drv',
+
+    'rev_fr_hip': 'revFrLegUprFK_drv',
+    'rev_fr_knee': 'revFrLegLwr01FK_drv',
+    'rev_fr_knee2': 'revFrLegLwr02FK_drv',
+    'rev_fr_ankle': 'revFrLegAnkleFK_drv',
 }
 
 ik_ctrls_dict = {
@@ -26,13 +46,26 @@ ik_ctrls_dict = {
     'elbow_pv': 'ArmPV_CTRL',
     'wrist': 'ArmWristIK_CTRL',
     'pv_offset_elbow': 'ArmPV_nOffset',
+
     'hip': 'LegUprIK_CTRL',
     'knee_pv': 'LegPV_CTRL',
     'knee': 'LegKnee_CTRL',
     'ankle': 'LegAnkleIK_CTRL',
     'toe': 'toe_CTRL',
     'ball': 'ball_CTRL',
-    'heel': 'heel_CTRL'
+    'heel': 'heel_CTRL',
+
+    'rev_bk_hip': 'revBkLegUprIK_CTRL',
+    'rev_bk_knee': 'RevBklegknee01_CTRL',
+    'rev_bk_knee2': 'RevBklegknee02_CTRL',
+    'rev_bk_ankle': 'revBkLegAnkleIK_CTRL',
+    'rev_bk_knee_pv': 'RevBklegPV_CTRL',
+
+    'rev_fr_hip': 'revFrLegUprIK_CTRL',
+    'rev_fr_knee': 'RevFrlegknee01_CTRL',
+    'rev_fr_knee2': 'RevFrlegknee02_CTRL',
+    'rev_fr_ankle': 'revFrLegAnkleIK_CTRL',
+    'rev_fr_knee_pv': 'RevFrlegPV_CTRL',
 }
 
 fk_ctrls_dict = {
@@ -41,12 +74,24 @@ fk_ctrls_dict = {
     'wrist': 'ArmWristFK_CTRL',
     'hip': 'LegUprFK_CTRL',
     'knee': 'LegLwrFK_CTRL',
-    'ankle': 'LegAnkleFK_CTRL'
+    'ankle': 'LegAnkleFK_CTRL',
+
+    'rev_bk_hip': 'revBkLegUprFK_CTRL',
+    'rev_bk_knee': 'revBkLegLwr01FK_CTRL',
+    'rev_bk_ankle': 'revBkLegLwr02FK_CTRL',
+    'rev_bk_foot': 'revBkLegAnkleFK_CTRL',
+
+    'rev_fr_hip': 'revFrLegUprFK_CTRL',
+    'rev_fr_knee': 'revFrLegLwr01FK_CTRL',
+    'rev_fr_ankle': 'revFrLegLwr02FK_CTRL',
+    'rev_fr_foot': 'revFrLegAnkleFK_CTRL'
 }
 
 settings_ctrls_dict = {
     'leg': 'LegSetting_CTRL',
-    'arm': 'ArmSetting_CTRL'
+    'arm': 'ArmSetting_CTRL',
+    'revFrleg': 'RevFrlegSetting_CTRL',
+    'revBkleg': 'RevBklegSetting_CTRL'
 }
 
 
@@ -76,25 +121,45 @@ def get_ik_blend_attr(side, part):
 
 
 def toggle_selected(*args):
+    sels = pm.selected()
+
     for sel in pm.selected():
         if 'CTRL' in str(sel) and str(sel)[0] in ['L', 'R']:
-            # Checks if this is a control and has a side
             side = str(sel)[0]
-            part = 'leg' if 'Leg_null' in sel.longName() else 'arm'
+
+            if 'Leg_null' in sel.longName():
+                part = 'leg'
+
+            elif 'Arm_null' in sel.longName():
+                part = 'arm'
+
+            elif 'RevFrleg_null' in sel.longName():
+                part = 'revFrleg'
+
+            elif 'RevBkleg_null' in sel.longName():
+                part = 'revBkleg'
 
             ik_fk_toggle(side, part)
+
+    pm.select(sels)
 
 
 def ik_fk_toggle(side, part):
     value = 1 - get_ik_blend_attr(side, part)
+    if 'rev' in part:
+        pole_direction = 1
+
+    else:
+        pole_direction = 1
 
     if value < 0.5:
-        fkik.fk_to_ik(side, part, ik_bones_dict, fk_ctrls_dict)
+        fkik.fk_to_ik(side, part, ik_bones_dict, fk_ctrls_dict, key=False)
         switch_ik_blend_attr(side, part, 0)
 
     else:
         switch_ik_blend_attr(side, part, 1)
-        fkik.ik_to_fk(side, part, fk_bones_dict, ik_ctrls_dict, amp_pv=15)
+        fkik.ik_to_fk(side, part, fk_bones_dict, ik_ctrls_dict, amp_pv=40,
+                      pole_direction=pole_direction, key=False)
 
     return
 
