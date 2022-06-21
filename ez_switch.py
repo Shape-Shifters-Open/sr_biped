@@ -1,3 +1,18 @@
+'''
+ez_switch.py
+Shaper Rigs / Burlington Interactive Solutions
+Daniel Piero 2022
+
+FK / IK match UI
+
+Supports SSC quad and biped rigs.
+
+Usage:
+Run 'show_ui()' to launch tool.
+Select any part of the arm or leg rig, and click the button to switch between FK and IK.
+'''
+
+
 import pymel.core as pm
 from sr_biped import fkik
 
@@ -108,14 +123,14 @@ def show_ui():
     win.show()
 
 
-def switch_ik_blend_attr(side, part, value):
-    pm.setAttr('{}_{}.ikBlend'.format(side, settings_ctrls_dict[part]), value)
+def switch_ik_blend_attr(side, part, value, namespace=''):
+    pm.setAttr('{}{}_{}.ikBlend'.format(namespace, side, settings_ctrls_dict[part]), value)
 
     return
 
 
-def get_ik_blend_attr(side, part):
-    value = pm.getAttr('{}_{}.ikBlend'.format(side, settings_ctrls_dict[part]))
+def get_ik_blend_attr(side, part, namespace=''):
+    value = pm.getAttr('{}{}_{}.ikBlend'.format(namespace, side, settings_ctrls_dict[part]))
 
     return value
 
@@ -124,9 +139,9 @@ def toggle_selected(*args):
     sels = pm.selected()
 
     for sel in pm.selected():
-        if 'CTRL' in str(sel) and str(sel)[0] in ['L', 'R']:
-            side = str(sel)[0]
+        side = str(sel).split(':')[-1][0]
 
+        if 'CTRL' in str(sel) and side in ['L', 'R']:
             if 'Leg_null' in sel.longName():
                 part = 'leg'
 
@@ -139,13 +154,14 @@ def toggle_selected(*args):
             elif 'RevBkleg_null' in sel.longName():
                 part = 'revBkleg'
 
-            ik_fk_toggle(side, part)
+            print("namespace " + sel.namespace())
+            ik_fk_toggle(side, part, sel.namespace())
 
     pm.select(sels)
 
 
-def ik_fk_toggle(side, part):
-    value = 1 - get_ik_blend_attr(side, part)
+def ik_fk_toggle(side, part, namespace=''):
+    value = 1 - get_ik_blend_attr(side, part, namespace)
     if 'rev' in part:
         pole_direction = 1
 
@@ -153,13 +169,13 @@ def ik_fk_toggle(side, part):
         pole_direction = 1
 
     if value < 0.5:
-        fkik.fk_to_ik(side, part, ik_bones_dict, fk_ctrls_dict, key=False)
-        switch_ik_blend_attr(side, part, 0)
+        fkik.fk_to_ik(side, part, ik_bones_dict, fk_ctrls_dict, key=False, namespace=namespace)
+        switch_ik_blend_attr(side, part, 0, namespace)
 
     else:
-        switch_ik_blend_attr(side, part, 1)
+        switch_ik_blend_attr(side, part, 1, namespace)
         fkik.ik_to_fk(side, part, fk_bones_dict, ik_ctrls_dict, amp_pv=40,
-                      pole_direction=pole_direction, key=False)
+                      pole_direction=pole_direction, key=False, namespace=namespace)
 
     return
 

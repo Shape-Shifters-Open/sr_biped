@@ -2,10 +2,11 @@
 fkik.py
 Shaper Rigs / Burlington Interactive Solutions
 Matt Riche 2021
+& Daniel Piero 2022
 
-FK / IK match tools.  By default will serve Shaper Rigs biped products.  When given different dicts
-can be customized to work on (most) any rig with the pole-vector aligned to the plane defined by 
-upper arm and lower-arm.
+FK / IK match tools.  By default will serve Shaper Rigs biped products.
+When given different dicts can be customized to work on (most) any rig with the
+pole-vector aligned to the plane defined by upper arm and lower-arm.
 
 For format requirements of the dict, see constants.py
 '''
