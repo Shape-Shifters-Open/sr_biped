@@ -343,6 +343,9 @@ def ik_to_fk(side=None, limb=None, fk_bones_dict=None, ik_ctrls_dict=None, key=T
            pm.xform(endmost_ctrl, r=True, os=True, ro=foot_rot_comp)
            print("The foot is neither left or right, trying our best to comp it.")
 
+    else:
+        pm.matchTransform(endmost_ctrl, endmost_target, pos=True, rot=True)
+
 
     # Last step is to get the orientation of the elbow control
     pm.matchTransform(middle_ctrl, middle_target, rot=True)

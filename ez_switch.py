@@ -162,15 +162,11 @@ def toggle_selected(*args):
 
 def ik_fk_toggle(side, part, namespace=''):
     value = 1 - get_ik_blend_attr(side, part, namespace)
-    if 'rev' in part:
-        pole_direction = 1
-
-    else:
-        pole_direction = 1
+    pole_direction = 1
 
     if value < 0.5:
-        fkik.fk_to_ik(side, part, ik_bones_dict, fk_ctrls_dict, key=False, namespace=namespace)
         switch_ik_blend_attr(side, part, 0, namespace)
+        fkik.fk_to_ik(side, part, ik_bones_dict, fk_ctrls_dict, key=False, namespace=namespace)
 
     else:
         switch_ik_blend_attr(side, part, 1, namespace)
